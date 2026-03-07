@@ -113,12 +113,6 @@ companion object {
 private external fun message(): String 
 ```
 
-> [!IMPORTANT]  
-> Check my article :point_right: [NDK Setup on Android/Flutter Android Project - Medium](https://medium.com/@nicosnicolaou/ndk-setup-on-android-flutter-android-project-1571d9a3f5cb) :point_left: <br />
-
-> [!IMPORTANT]  
-> Similar project with (Dart Language) :point_right: [FlutterAndroidProjectAndNDK](https://github.com/NicosNicolaou16/FlutterAndroidProjectAndNDK) :point_left: <br />
-
 ## 🔧 Versioning
 
 - **Target SDK:** **36**
