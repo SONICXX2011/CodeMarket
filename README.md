@@ -38,7 +38,10 @@ A guide and starter project for setting up the **Android NDK (Native Development
 
 # Sets the minimum version of CMake required to build the native library.
 
-cmake_minimum_required(VERSION 3.6.0)
+cmake_minimum_required(VERSION 3.10.0)
+
+# Need the project name
+project(AndroidAndNDK)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -79,7 +82,9 @@ target_link_libraries( # Specifies the target library.
         ${log-lib})
 ```
 
-- Add the follow code in Gradle file.
+### 3. Gradle Integration
+Add the following to your module-level `build.gradle.kts`:
+
 
 ```Kotlin
 android {
@@ -98,7 +103,8 @@ android {
 }
 ```
 
-- Load the C/C++ file.
+### 4. Implementation (Kotlin)
+Load the library and declare the external function:
 
 ```Kotlin
 companion object {
