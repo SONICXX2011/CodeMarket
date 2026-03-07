@@ -11,11 +11,17 @@
 [![YouTube](https://img.shields.io/badge/YouTube-%23FF0000.svg?style=for-the-badge&logo=YouTube&logoColor=white)](https://www.youtube.com/@nicosnicolaou16)
 [![Google Developer Profile](https://img.shields.io/badge/Developer_Profile-blue?style=for-the-badge&label=Google)](https://g.dev/nicolaou_nicos)
 
-This project sets up the NDK (Native Development Kit) in Android for communication between an
-Android project and C/C++ code. In this example, the C/C++ code simply prints a text message to the
-Android application.
+A guide and starter project for setting up the **Android NDK (Native Development Kit)** to facilitate communication between Kotlin/Java and C/C++ code. This project demonstrates a basic implementation where a C++ backend returns a string to be displayed in the Android UI.
 
-# Setup - Steps
+> [!IMPORTANT]  
+> A detailed step-by-step guide is available on Medium!  
+> 👉 **[NDK Setup on Android/Flutter Android Project](https://medium.com/@nicosnicolaou/ndk-setup-on-android-flutter-android-project-1571d9a3f5cb)** 👈
+
+> [!IMPORTANT]  
+> A similar project is also available for Flutter (Dart)!  
+> 👉 **[FlutterAndroidProjectAndNDK](https://github.com/NicosNicolaou16/FlutterAndroidProjectAndNDK)** 👈
+
+## 🚀 Setup Steps
 
 - Install the latest NDK and CMake version from Android Studio SDK Manager from the SDK Tools
   section.
