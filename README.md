@@ -85,7 +85,6 @@ target_link_libraries( # Specifies the target library.
 ### 3. Gradle Integration
 Add the following to your module-level `build.gradle.kts`:
 
-
 ```Kotlin
 android {
 
