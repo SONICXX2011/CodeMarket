@@ -23,10 +23,14 @@ A guide and starter project for setting up the **Android NDK (Native Development
 
 ## 🚀 Setup Steps
 
-- Install the latest NDK and CMake version from Android Studio SDK Manager from the SDK Tools
-  section.
-- Create the cpp package, add the CMake .txt and .cpp file. Some name below is base on .cpp file
-  name.
+### 1. Requirements
+* Install the latest **NDK** and **CMake** via the Android Studio SDK Manager (**SDK Tools** tab).
+
+### 2. Native Configuration
+* Create a `cpp` package under `src/main/`.
+* Add your `.cpp` source file and a `CMakeLists.txt` file.
+
+**Example `CMakeLists.txt`:**
 
 ```cmake
 # For more information about using CMake with Android Studio, read the
