@@ -36,11 +36,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
-    kotlin {
-        compilerOptions {
-            jvmTarget = JvmTarget.fromTarget("21")
-        }
-    }
     buildFeatures {
         compose = true
     }
@@ -59,6 +54,11 @@ android {
         }
     }
     ndkVersion = "29.0.14206865"
+}
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.fromTarget("21")
+    }
 }
 
 dependencies {
