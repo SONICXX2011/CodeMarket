@@ -130,6 +130,7 @@ private external fun message(): String
 - **Kotlin Version:** **2.3.10**
 - **Gradle Version:** **9.1.0**
 - **Native Build Tool:** **CMake 3.10.0+**
+- **NDK Version:** **29.0.14206865**
 
 ## 📚 References & Tutorials
 
