@@ -1,5 +1,16 @@
 # Android Project and NDK (Kotlin)
 
+[![Linktree](https://img.shields.io/badge/linktree-1de9b6?style=for-the-badge&logo=linktree&logoColor=white)](https://linktr.ee/nicos_nicolaou)
+[![Site](https://img.shields.io/badge/Site-blue?style=for-the-badge&label=Web)](https://nicosnicolaou16.github.io/)
+[![X](https://img.shields.io/badge/X-%23000000.svg?style=for-the-badge&logo=X&logoColor=white)](https://twitter.com/nicolaou_nicos)
+[![LinkedIn](https://img.shields.io/badge/linkedin-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/nicos-nicolaou-a16720aa)
+[![Medium](https://img.shields.io/badge/Medium-12100E?style=for-the-badge&logo=medium&logoColor=white)](https://medium.com/@nicosnicolaou)
+[![Mastodon](https://img.shields.io/badge/-MASTODON-%232B90D9?style=for-the-badge&logo=mastodon&logoColor=white)](https://androiddev.social/@nicolaou_nicos)
+[![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=for-the-badge&logo=Bluesky&logoColor=white)](https://bsky.app/profile/nicolaounicos.bsky.social)
+[![Dev.to blog](https://img.shields.io/badge/dev.to-0A0A0A?style=for-the-badge&logo=dev.to&logoColor=white)](https://dev.to/nicosnicolaou16)
+[![YouTube](https://img.shields.io/badge/YouTube-%23FF0000.svg?style=for-the-badge&logo=YouTube&logoColor=white)](https://www.youtube.com/@nicosnicolaou16)
+[![Google Developer Profile](https://img.shields.io/badge/Developer_Profile-blue?style=for-the-badge&label=Google)](https://g.dev/nicolaou_nicos)
+
 This project sets up the NDK (Native Development Kit) in Android for communication between an
 Android project and C/C++ code. In this example, the C/C++ code simply prints a text message to the
 Android application.
@@ -102,15 +113,26 @@ private external fun message(): String
 > [!IMPORTANT]  
 > Similar project with (Dart Language) :point_right: [FlutterAndroidProjectAndNDK](https://github.com/NicosNicolaou16/FlutterAndroidProjectAndNDK) :point_left: <br />
 
-## Versioning
+## 🔧 Versioning
 
-Target SDK version: 36 <br />
-Minimum SDK version: 29 <br />
-Kotlin version: 2.3.10 <br />
-Gradle version: 9.1.0 <br />
+- **Target SDK:** **36**
+- **Minimum SDK:** **29**
+- **Kotlin Version:** **2.3.10**
+- **Gradle Version:** **9.1.0**
+- **Native Build Tool:** **CMake 3.6.0+**
 
-# References/Tutorials Follow
+## 📚 References & Tutorials
 
-https://github.com/android/ndk-samples <br />
-https://developer.android.com/studio/projects/add-native-code <br />
-https://blog.mindorks.com/getting-started-with-android-ndk-android-tutorial/ <br />
+- **Official Samples:** [android/ndk-samples](https://github.com/android/ndk-samples)
+- **Documentation:** [Add native code to your project](https://developer.android.com/studio/projects/add-native-code)
+- **Community Guide:** [Getting Started with Android NDK - Mindorks](https://blog.mindorks.com/getting-started-with-android-ndk-android-tutorial/)
+
+## ⭐ Stargazers
+
+If you enjoy this project, please give it a star!
+Check out all the stargazers
+here: [Stargazers on GitHub](https://github.com/NicosNicolaou16/AndroidProjectAndNDK/stargazers)
+
+## 🙏 Support & Contributions
+
+This project is actively maintained. Feedback, bug reports, and feature requests are welcome! Please feel free to **open an issue** or submit a **pull request**.
