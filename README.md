@@ -131,6 +131,7 @@ private external fun message(): String
 - **Gradle Version:** **9.1.0**
 - **Native Build Tool:** **CMake 3.10.0+**
 - **NDK Version:** **29.0.14206865**
+- **CMake Version:** **4.1.2**
 
 ## 📚 References & Tutorials
 
