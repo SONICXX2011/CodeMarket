@@ -124,10 +124,10 @@ private external fun message(): String
 
 ## 🔧 Versioning
 
-- **Target SDK:** **36**
+- **Target SDK:** **37**
 - **Minimum SDK:** **29**
-- **Kotlin Version:** **2.3.10**
-- **Gradle Version:** **9.1.0**
+- **Kotlin Version:** **2.4.10**
+- **Gradle Version:** **9.3.1**
 - **Native Build Tool:** **CMake 3.10.0+**
 - **NDK Version:** **29.0.14206865**
 - **CMake Version:** **4.1.2**
