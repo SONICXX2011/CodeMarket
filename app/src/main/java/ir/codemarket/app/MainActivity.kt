@@ -1,4 +1,4 @@
-package com.nicos.androidandndk
+package ir.codemarket.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,7 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
-import com.nicos.androidandndk.ui.theme.AndroidAndNDKTheme
+import ir.codemarket.app.ui.theme.AndroidAndNDKTheme
 
 class MainActivity : ComponentActivity() {
 
