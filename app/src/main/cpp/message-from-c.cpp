@@ -1,16 +1,21 @@
 #include <jni.h>
 #include <string>
-#include <cstdio>
 #include <android/log.h>
 
-using namespace std;
+#define LOG_TAG "CodeMarket"
 
-#define LOG_TAG "AndroidProjectAndNDK"
-#define LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
+#define LOGV(...) \
+    __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_nicos_androidandndk_MainActivity_message(JNIEnv *env, jobject object) {
-    string message = "Hey Android, sent message from C file";
-    LOGV("The value is %s", message.c_str());
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_ir_codemarket_app_MainActivity_message(
+        JNIEnv *env,
+        jobject /* thiz */
+) {
+    std::string message = "Hey Code Market, sent message from C++";
+
+    LOGV("Native message: %s", message.c_str());
+
     return env->NewStringUTF(message.c_str());
 }
