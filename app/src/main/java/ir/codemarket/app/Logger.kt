@@ -29,7 +29,8 @@ object Logger {
     }
 
     fun logNetwork(endpoint: String, payload: String, response: String?, code: Int) {
-        val log = "--- Network Request ---\nTime: ${getCurrentTime()}\nEndpoint: $endpoint\nPayload: $payload\nResponse Code: $code\nResponse Body: $response ?: "No Response"\n----------------------------------"
+        val res = response ?: "No Response"
+        val log = "--- Network Request ---\nTime: ${getCurrentTime()}\nEndpoint: $endpoint\nPayload: $payload\nResponse Code: $code\nResponse Body: $res\n----------------------------------"
         writeToFile(log)
     }
 
