@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose") version "1.9.22"
 }
 
 android {
@@ -33,7 +32,12 @@ android {
 
     buildFeatures {
         viewBinding = true
-        compose = true // این خط برای پشتیبانی از پوشه ui اضافه شد
+        compose = true
+    }
+
+    // تنظیمات استاندارد Compose برای Kotlin 1.9.22
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.8"
     }
 
     compileOptions {
@@ -76,7 +80,7 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
-    // کتابخانه های Jetpack Compose (برای حفظ فایل های پوشه ui)
+    // کتابخانه های Jetpack Compose
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
