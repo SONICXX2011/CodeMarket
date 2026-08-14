@@ -23,11 +23,11 @@ object ApiClient {
                 Pair(body, response.code)
             }
         } catch (e: Exception) {
-            Logger.logEvent("Network Error", "Failed to connect: ${e.message}")
+            Logger.logEvent("Network Error", "Failed: ${e.message}")
             Pair(null, -1)
         }
     }
-    
+
     fun getRequest(endpoint: String, token: String): Pair<String?, Int> {
         val request = Request.Builder()
             .url("$baseUrl$endpoint")
@@ -38,11 +38,10 @@ object ApiClient {
         return try {
             client.newCall(request).execute().use { response ->
                 val body = response.body?.string()
-                Logger.logNetwork(endpoint, "GET Request", body, response.code)
+                Logger.logNetwork(endpoint, "GET", body, response.code)
                 Pair(body, response.code)
             }
         } catch (e: Exception) {
-            Logger.logEvent("Network Error", "Failed to connect: ${e.message}")
             Pair(null, -1)
         }
     }

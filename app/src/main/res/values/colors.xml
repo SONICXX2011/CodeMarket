@@ -2,7 +2,5 @@
     <color name="purple">#6650a4</color>
     <color name="yellow">#FFD600</color>
     <color name="glass_white">#33FFFFFF</color>
-    <color name="glass_white_dark">#33FFFFFF</color>
-    <color name="glass_white_light">#33000000</color>
     <color name="stroke_white">#55FFFFFF</color>
 </resources>

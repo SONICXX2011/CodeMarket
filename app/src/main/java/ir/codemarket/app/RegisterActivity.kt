@@ -2,6 +2,7 @@ package ir.codemarket.app
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import ir.codemarket.app.databinding.ActivityRegisterBinding
@@ -19,7 +20,6 @@ class RegisterActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         sessionManager = SessionManager(this)
         if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark) else setTheme(R.style.Theme_CodeMarket_Light)
-        
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -33,12 +33,10 @@ class RegisterActivity : AppCompatActivity() {
             val username = binding.etUsername.text.toString()
             val email = binding.etEmail.text.toString()
             val password = binding.etPassword.text.toString()
-            
             if (username.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
                 CoroutineScope(Dispatchers.Main).launch {
                     val payload = NativeLib.buildRegisterPayload(username, email, password)
                     val (response, code) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/auth/register", payload) }
-                    
                     if (response != null) {
                         val json = JSONObject(response)
                         if (json.getBoolean("success")) {
@@ -48,7 +46,7 @@ class RegisterActivity : AppCompatActivity() {
                             finish()
                         } else {
                             binding.tvError.text = json.optString("error", "خطای ناشناخته")
-                            binding.tvError.visibility = android.view.View.VISIBLE
+                            binding.tvError.visibility = View.VISIBLE
                         }
                     }
                 }

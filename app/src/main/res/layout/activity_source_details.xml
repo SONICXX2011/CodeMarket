@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F0F0F"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView android:id="@+id/tvDetailsName" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="نام سورس" android:textColor="@android:color/white" android:textSize="28sp" android:textStyle="bold"/>
+    <TextView android:id="@+id/tvDetailsDesc" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="توضیحات کامل..." android:textColor="#CCFFFFFF" android:layout_marginTop="16dp" android:textSize="16sp"/>
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#33FFFFFF" android:layout_marginVertical="24dp"/>
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="نظرات کاربران" android:textColor="@android:color/white" android:textSize="20sp" android:textStyle="bold"/>
+    
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/recyclerComments" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
+    
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp">
+        <EditText android:id="@+id/etComment" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:hint="کامنت بنویسید..." android:textColorHint="#80FFFFFF" android:textColor="@android:color/white" android:backgroundTint="@color/purple"/>
+        <Button android:id="@+id/btnSendComment" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ارسال"/>
+    </LinearLayout>
+</LinearLayout>

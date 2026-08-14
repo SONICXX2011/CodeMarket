@@ -1,22 +1,15 @@
 <resources>
-    <!-- تم پایه -->
     <style name="Theme.CodeMarket" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowTranslucentStatus">true</item>
     </style>
-
     <style name="Theme.CodeMarket.NoActionBar" parent="Theme.CodeMarket">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>
-
-    <!-- تم تاریک -->
     <style name="Theme.CodeMarket_Dark" parent="Theme.CodeMarket.NoActionBar">
         <item name="android:windowBackground">@drawable/bg_gradient_dark</item>
     </style>
-
-    <!-- تم روشن -->
     <style name="Theme.CodeMarket_Light" parent="Theme.CodeMarket.NoActionBar">
         <item name="android:windowBackground">@drawable/bg_gradient_light</item>
     </style>
