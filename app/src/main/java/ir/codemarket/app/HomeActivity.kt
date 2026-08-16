@@ -42,9 +42,19 @@ class HomeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sessionManager = SessionManager(this)
-        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark) else setTheme(R.style.Theme_CodeMarket_Light)
+        if (sessionManager.isDarkMode()) {
+            setTheme(R.style.Theme_CodeMarket_Dark)
+        } else {
+            setTheme(R.style.Theme_CodeMarket_Light)
+        }
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        if (sessionManager.isDarkMode()) {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
+        } else {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
+        }
 
         setupShopView()
         setupUploadView()
@@ -57,26 +67,10 @@ class HomeActivity : AppCompatActivity() {
 
         binding.bottomNav.setOnItemSelectedListener { item ->
             when(item.itemId) {
-                R.id.nav_home -> { 
-                    binding.recyclerView.visibility = View.VISIBLE
-                    binding.uploadContainer.visibility = View.GONE
-                    binding.profileContainer.visibility = View.GONE
-                }
-                R.id.nav_shop -> { 
-                    binding.recyclerView.visibility = View.VISIBLE
-                    binding.uploadContainer.visibility = View.GONE
-                    binding.profileContainer.visibility = View.GONE
-                }
-                R.id.nav_profile -> { 
-                    binding.recyclerView.visibility = View.GONE
-                    binding.uploadContainer.visibility = View.GONE
-                    binding.profileContainer.visibility = View.VISIBLE
-                }
-                R.id.nav_submit -> { 
-                    binding.recyclerView.visibility = View.GONE
-                    binding.uploadContainer.visibility = View.VISIBLE
-                    binding.profileContainer.visibility = View.GONE
-                }
+                R.id.nav_home -> { binding.recyclerView.visibility = View.VISIBLE; binding.uploadContainer.visibility = View.GONE; binding.profileContainer.visibility = View.GONE }
+                R.id.nav_shop -> { binding.recyclerView.visibility = View.VISIBLE; binding.uploadContainer.visibility = View.GONE; binding.profileContainer.visibility = View.GONE }
+                R.id.nav_profile -> { binding.recyclerView.visibility = View.GONE; binding.uploadContainer.visibility = View.GONE; binding.profileContainer.visibility = View.VISIBLE }
+                R.id.nav_submit -> { binding.recyclerView.visibility = View.GONE; binding.uploadContainer.visibility = View.VISIBLE; binding.profileContainer.visibility = View.GONE }
             }
             true
         }
@@ -194,6 +188,15 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
         holder.b.tvSourceName.text = item.name
         holder.b.tvSourceDesc.text = item.desc
         holder.b.root.setOnClickListener { onClick(position) }
+        
+        val baseUrl = NativeLib.getBaseUrl()
+        val fullLogoUrl = if (item.logo.startsWith("http")) item.logo else baseUrl + item.logo
+        
+        Glide.with(holder.b.root.context)
+            .load(fullLogoUrl)
+            .placeholder(R.drawable.ic_sun)
+            .error(R.drawable.ic_sun)
+            .into(holder.b.imgSourceLogo)
     }
 
     override fun getItemCount() = items.size

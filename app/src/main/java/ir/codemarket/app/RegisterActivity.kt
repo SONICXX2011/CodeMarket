@@ -13,17 +13,26 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 class RegisterActivity : AppCompatActivity() {
+
     private lateinit var binding: ActivityRegisterBinding
     private lateinit var sessionManager: SessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
         sessionManager = SessionManager(this)
-        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark) else setTheme(R.style.Theme_CodeMarket_Light)
+        
+        if (sessionManager.isDarkMode()) {
+            setTheme(R.style.Theme_CodeMarket_Dark)
+        } else {
+            setTheme(R.style.Theme_CodeMarket_Light)
+        }
+        
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         updateThemeIcon()
+        
         binding.btnThemeToggle.setOnClickListener {
             sessionManager.saveThemeMode(!sessionManager.isDarkMode())
             recreate()
@@ -33,10 +42,19 @@ class RegisterActivity : AppCompatActivity() {
             val username = binding.etUsername.text.toString()
             val email = binding.etEmail.text.toString()
             val password = binding.etPassword.text.toString()
+            
             if (username.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
+                
+                binding.btnRegister.visibility = View.GONE
+                binding.progressBar.visibility = View.VISIBLE
+                
                 CoroutineScope(Dispatchers.Main).launch {
                     val payload = NativeLib.buildRegisterPayload(username, email, password)
                     val (response, code) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/auth/register", payload) }
+                    
+                    binding.btnRegister.visibility = View.VISIBLE
+                    binding.progressBar.visibility = View.GONE
+                    
                     if (response != null) {
                         val json = JSONObject(response)
                         if (json.getBoolean("success")) {
@@ -48,6 +66,9 @@ class RegisterActivity : AppCompatActivity() {
                             binding.tvError.text = json.optString("error", "خطای ناشناخته")
                             binding.tvError.visibility = View.VISIBLE
                         }
+                    } else {
+                        binding.tvError.text = "ارتباط با سرور برقرار نشد"
+                        binding.tvError.visibility = View.VISIBLE
                     }
                 }
             }
