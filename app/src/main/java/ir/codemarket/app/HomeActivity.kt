@@ -57,10 +57,26 @@ class HomeActivity : AppCompatActivity() {
 
         binding.bottomNav.setOnItemSelectedListener { item ->
             when(item.itemId) {
-                R.id.nav_home -> { binding.shopContainer.visibility = View.VISIBLE; binding.uploadContainer.visibility = View.GONE; binding.profileContainer.visibility = View.GONE }
-                R.id.nav_shop -> { binding.shopContainer.visibility = View.VISIBLE; binding.uploadContainer.visibility = View.GONE; binding.profileContainer.visibility = View.GONE }
-                R.id.nav_profile -> { binding.shopContainer.visibility = View.GONE; binding.uploadContainer.visibility = View.GONE; binding.profileContainer.visibility = View.VISIBLE }
-                R.id.nav_submit -> { binding.shopContainer.visibility = View.GONE; binding.uploadContainer.visibility = View.VISIBLE; binding.profileContainer.visibility = View.GONE }
+                R.id.nav_home -> { 
+                    binding.recyclerView.visibility = View.VISIBLE
+                    binding.uploadContainer.visibility = View.GONE
+                    binding.profileContainer.visibility = View.GONE
+                }
+                R.id.nav_shop -> { 
+                    binding.recyclerView.visibility = View.VISIBLE
+                    binding.uploadContainer.visibility = View.GONE
+                    binding.profileContainer.visibility = View.GONE
+                }
+                R.id.nav_profile -> { 
+                    binding.recyclerView.visibility = View.GONE
+                    binding.uploadContainer.visibility = View.GONE
+                    binding.profileContainer.visibility = View.VISIBLE
+                }
+                R.id.nav_submit -> { 
+                    binding.recyclerView.visibility = View.GONE
+                    binding.uploadContainer.visibility = View.VISIBLE
+                    binding.profileContainer.visibility = View.GONE
+                }
             }
             true
         }
@@ -73,7 +89,7 @@ class HomeActivity : AppCompatActivity() {
             intent.putExtra("source_id", shopItems[position].id)
             startActivity(intent)
         }
-        binding.recyclerView.layoutManager = GridLayoutManager(this, 2) // گرید ۲ ستونی
+        binding.recyclerView.layoutManager = GridLayoutManager(this, 2)
         binding.recyclerView.adapter = shopAdapter
 
         binding.btnSearchIcon.setOnClickListener {
@@ -131,7 +147,9 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun setupProfileView() {
-        binding.btnChangePic.setOnClickListener { /* می‌توانید اینجا نیز FilePicker راه بیندازید */ }
+        binding.btnChangePic.setOnClickListener { 
+            Toast.makeText(this, "قابلیت آپلود عکس به زودی اضافه می‌شود", Toast.LENGTH_SHORT).show()
+        }
         binding.btnUpdateProfile.setOnClickListener {
             val fullName = binding.etFullName.text.toString()
             CoroutineScope(Dispatchers.Main).launch {
