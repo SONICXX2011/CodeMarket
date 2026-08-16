@@ -1,6 +1,7 @@
 package ir.codemarket.app
 
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -11,8 +12,8 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,7 +27,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
@@ -44,7 +44,6 @@ class HomeActivity : AppCompatActivity() {
 
     private var selectedZipUri: Uri? = null
     private var selectedLogoUri: Uri? = null
-    private var selectedProfilePicUri: Uri? = null
 
     private val pickZip = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -61,10 +60,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private val pickProfilePic = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let {
-            selectedProfilePicUri = it
-            uploadProfilePic(it)
-        }
+        uri?.let { uploadProfilePic(it) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -202,7 +198,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun setupFeedView() {
-        feedAdapter = FeedAdapter(feedItems, this)
+        feedAdapter = FeedAdapter(feedItems, { postId, position -> toggleLike(postId, position) }, { postId, position -> showCommentDialog(postId, position) })
         binding.recyclerFeed.layoutManager = LinearLayoutManager(this)
         binding.recyclerFeed.adapter = feedAdapter
     }
@@ -218,11 +214,6 @@ class HomeActivity : AppCompatActivity() {
                     feedItems.clear()
                     for (i in 0 until arr.length()) {
                         val p = arr.getJSONObject(i)
-                        val likesArr = p.optJSONArray("likes") ?: JSONArray()
-                        val likes = mutableListOf<Int>()
-                        for (j in 0 until likesArr.length()) {
-                            likes.add(likesArr.getInt(j))
-                        }
                         feedItems.add(FeedItem(
                             p.getInt("id"),
                             p.optString("username"),
@@ -230,8 +221,9 @@ class HomeActivity : AppCompatActivity() {
                             p.optString("text"),
                             p.optString("media"),
                             p.optString("media_type"),
-                            likes,
-                            p.optInt("comments", 0) // временно для каунта, если есть массив надо парсить
+                            p.optBoolean("is_liked"),
+                            p.optInt("like_count"),
+                            p.optInt("comment_count")
                         ))
                     }
                     feedAdapter.notifyDataSetChanged()
@@ -320,6 +312,61 @@ class HomeActivity : AppCompatActivity() {
             this.outputStream().use { output -> input.copyTo(output) }
         }
     }
+
+    private fun toggleLike(postId: Int, position: Int) {
+        val token = sessionManager.fetchAuthToken() ?: ""
+        val payload = JSONObject().put("post_id", postId).toString()
+        CoroutineScope(Dispatchers.Main).launch {
+            val (response, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/feed/like", payload, token) }
+            if (response != null) {
+                val json = JSONObject(response)
+                if (json.getBoolean("success")) {
+                    val liked = json.getBoolean("liked")
+                    val count = json.getInt("like_count")
+                    val item = feedItems[position]
+                    feedItems[position] = item.copy(isLiked = liked, likeCount = count)
+                    feedAdapter.notifyItemChanged(position)
+                }
+            }
+        }
+    }
+
+    private fun showCommentDialog(postId: Int, position: Int) {
+        val input = EditText(this)
+        input.hint = "کامنت بنویسید..."
+        input.setTextColor(Color.WHITE)
+        input.setHintTextColor(Color.parseColor("#80FFFFFF"))
+        
+        MaterialAlertDialogBuilder(this)
+            .setTitle("ثبت نظر")
+            .setView(input)
+            .setPositiveButton("ارسال") { _, _ ->
+                val text = input.text.toString()
+                if (text.isNotEmpty()) {
+                    sendComment(postId, text, position)
+                }
+            }
+            .setNegativeButton("لغو", null)
+            .show()
+    }
+
+    private fun sendComment(postId: Int, text: String, position: Int) {
+        val token = sessionManager.fetchAuthToken() ?: ""
+        val payload = JSONObject().put("post_id", postId).put("text", text).toString()
+        CoroutineScope(Dispatchers.Main).launch {
+            val (response, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/feed/comment", payload, token) }
+            if (response != null) {
+                val json = JSONObject(response)
+                if (json.getBoolean("success")) {
+                    Toast.makeText(this@HomeActivity, "کامنت ثبت شد", Toast.LENGTH_SHORT).show()
+                    val newCount = json.getInt("comment_count")
+                    val item = feedItems[position]
+                    feedItems[position] = item.copy(commentCount = newCount)
+                    feedAdapter.notifyItemChanged(position)
+                }
+            }
+        }
+    }
 }
 
 data class ShopItem(val id: Int, val name: String, val desc: String, val logo: String)
@@ -330,92 +377,67 @@ data class FeedItem(
     val text: String,
     val media: String,
     val mediaType: String,
-    val likes: List<Int>,
+    val isLiked: Boolean,
+    val likeCount: Int,
     val commentCount: Int
 )
 
 class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) -> Unit) : RecyclerView.Adapter<ShopAdapter.ViewHolder>() {
-
     class ViewHolder(val b: ItemShopBinding) : RecyclerView.ViewHolder(b.root)
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder(ItemShopBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     }
-
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
         holder.b.tvSourceName.text = item.name
         holder.b.tvSourceDesc.text = item.desc
         holder.b.root.setOnClickListener { onClick(position) }
-
         val baseUrl = NativeLib.getBaseUrl()
         val fullLogoUrl = if (item.logo.startsWith("http")) item.logo else baseUrl + item.logo
-
-        Glide.with(holder.b.root.context)
-            .load(fullLogoUrl)
-            .placeholder(R.drawable.ic_sun)
-            .into(holder.b.imgSourceLogo)
+        Glide.with(holder.b.root.context).load(fullLogoUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgSourceLogo)
     }
-
     override fun getItemCount(): Int = items.size
 }
 
-class FeedAdapter(private val items: List<FeedItem>, private val activity: HomeActivity) : RecyclerView.Adapter<FeedAdapter.ViewHolder>() {
-
+class FeedAdapter(
+    private val items: List<FeedItem>,
+    private val onLikeClick: (Int, Int) -> Unit,
+    private val onCommentClick: (Int, Int) -> Unit
+) : RecyclerView.Adapter<FeedAdapter.ViewHolder>() {
     class ViewHolder(val b: ItemFeedPostBinding) : RecyclerView.ViewHolder(b.root)
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder(ItemFeedPostBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     }
-
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
         holder.b.tvUsername.text = item.username
         holder.b.tvPostText.text = item.text
-        holder.b.tvLikeCount.text = item.likes.size.toString()
+        holder.b.tvLikeCount.text = item.likeCount.toString()
         holder.b.tvCommentCount.text = item.commentCount.toString()
 
         val baseUrl = NativeLib.getBaseUrl()
-
         if (item.userPic.isNotEmpty()) {
             val picUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
-            Glide.with(holder.b.root.context)
-                .load(picUrl)
-                .placeholder(R.drawable.ic_sun)
-                .into(holder.b.imgUserPic)
+            Glide.with(holder.b.root.context).load(picUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgUserPic)
         }
-
         if (item.media.isNotEmpty() && item.mediaType == "image") {
             val mediaUrl = if (item.media.startsWith("http")) item.media else baseUrl + item.media
-            Glide.with(holder.b.root.context)
-                .load(mediaUrl)
-                .into(holder.b.imgPostMedia)
+            Glide.with(holder.b.root.context).load(mediaUrl).into(holder.b.imgPostMedia)
             holder.b.imgPostMedia.visibility = View.VISIBLE
         } else {
             holder.b.imgPostMedia.visibility = View.GONE
         }
 
-        // Лайк логикасы
-        val sessionManager = SessionManager(activity)
-        val userId = sessionManager.fetchAuthToken()?.let { NativeLib.verifyToken(it) } ?: -1
-
-        val isLiked = item.likes.contains(userId)
-        if (isLiked) {
-            holder.b.imgLike.setColorFilter(activity.getColor(R.color.purple))
-            holder.b.tvLikeCount.setTextColor(activity.getColor(R.color.purple))
+        if (item.isLiked) {
+            holder.b.imgLike.setColorFilter(ContextCompat.getColor(holder.b.root.context, R.color.purple))
+            holder.b.tvLikeCount.setTextColor(ContextCompat.getColor(holder.b.root.context, R.color.purple))
         } else {
-            holder.b.imgLike.setColorFilter(activity.getColor(android.R.color.darker_gray))
-            holder.b.tvLikeCount.setTextColor(activity.getColor(android.R.color.darker_gray))
+            holder.b.imgLike.setColorFilter(Color.parseColor("#80FFFFFF"))
+            holder.b.tvLikeCount.setTextColor(Color.parseColor("#80FFFFFF"))
         }
 
-        holder.b.btnLike.setOnClickListener {
-            activity.toggleLike(item.id, position)
-        }
-
-        holder.b.btnComment.setOnClickListener {
-            activity.showCommentDialog(item.id, position)
-        }
+        holder.b.btnLike.setOnClickListener { onLikeClick(item.id, position) }
+        holder.b.btnComment.setOnClickListener { onCommentClick(item.id, position) }
     }
-
     override fun getItemCount(): Int = items.size
 }
