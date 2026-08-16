@@ -1,7 +1,10 @@
 package ir.codemarket.app
 
+import android.content.ContentValues
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +25,7 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
 
 class SourceDetailsActivity : AppCompatActivity() {
 
@@ -105,36 +109,44 @@ class SourceDetailsActivity : AppCompatActivity() {
                     val totalBytes = body.contentLength()
                     var downloadedBytes = 0L
                     
-                    // ذخیره در پوشه دانلودها
-                    val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-                    val file = File(dir, "source_$sourceId.zip")
                     val inputStream = body.byteStream()
-                    val outputStream = FileOutputStream(file)
                     val buffer = ByteArray(8192)
                     var bytesRead: Int
 
-                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                        outputStream.write(buffer, 0, bytesRead)
-                        downloadedBytes += bytesRead
-                        
-                        if (totalBytes > 0) {
-                            val progress = (downloadedBytes * 100 / totalBytes).toInt()
-                            withContext(Dispatchers.Main) {
-                                binding.progressDownload.progress = progress
-                                binding.tvDownloadPercent.text = "در حال دانلود... $progress%"
-                            }
+                    // استفاده از MediaStore برای دسترسی به حافظه در اندروید 10 به بالا
+                    val resolver = contentResolver
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, "source_$sourceId.zip")
+                        put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/CodeMarketDownload")
                         }
                     }
-                    
-                    outputStream.flush()
-                    outputStream.close()
-                    inputStream.close()
+
+                    val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                    if (uri == null) throw IOException("Failed to create MediaStore entry")
+
+                    resolver.openOutputStream(uri)?.use { outputStream ->
+                        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                            outputStream.write(buffer, 0, bytesRead)
+                            downloadedBytes += bytesRead
+                            
+                            if (totalBytes > 0) {
+                                val progress = (downloadedBytes * 100 / totalBytes).toInt()
+                                withContext(Dispatchers.Main) {
+                                    binding.progressDownload.progress = progress
+                                    binding.tvDownloadPercent.text = "در حال دانلود... $progress%"
+                                }
+                            }
+                        }
+                        outputStream.flush()
+                    } ?: throw IOException("Failed to open output stream")
 
                     withContext(Dispatchers.Main) {
                         binding.btnDownload.visibility = View.VISIBLE
                         binding.progressDownload.visibility = View.GONE
                         binding.tvDownloadPercent.visibility = View.GONE
-                        Toast.makeText(this@SourceDetailsActivity, "دانلود با موفقیت در پوشه Downloads انجام شد!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@SourceDetailsActivity, "دانلود با موفقیت در پوشه Download/CodeMarketDownload انجام شد!", Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (e: Exception) {

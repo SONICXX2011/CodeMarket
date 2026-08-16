@@ -3,6 +3,8 @@ package ir.codemarket.app
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,9 +26,11 @@ import org.json.JSONObject
 import java.io.File
 
 class HomeActivity : AppCompatActivity() {
+
     private lateinit var binding: ActivityHomeBinding
     private lateinit var sessionManager: SessionManager
     private val shopItems = mutableListOf<ShopItem>()
+    private val filteredItems = mutableListOf<ShopItem>()
     private lateinit var shopAdapter: ShopAdapter
     private var selectedZipUri: Uri? = null
     private var selectedLogoUri: Uri? = null
@@ -41,12 +45,17 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
         sessionManager = SessionManager(this)
+        
         if (sessionManager.isDarkMode()) {
             setTheme(R.style.Theme_CodeMarket_Dark)
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
             setTheme(R.style.Theme_CodeMarket_Light)
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
         }
+        
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -66,23 +75,49 @@ class HomeActivity : AppCompatActivity() {
         }
 
         binding.bottomNav.setOnItemSelectedListener { item ->
-            when(item.itemId) {
-                R.id.nav_home -> { binding.recyclerView.visibility = View.VISIBLE; binding.uploadContainer.visibility = View.GONE; binding.profileContainer.visibility = View.GONE }
-                R.id.nav_shop -> { binding.recyclerView.visibility = View.VISIBLE; binding.uploadContainer.visibility = View.GONE; binding.profileContainer.visibility = View.GONE }
-                R.id.nav_profile -> { binding.recyclerView.visibility = View.GONE; binding.uploadContainer.visibility = View.GONE; binding.profileContainer.visibility = View.VISIBLE }
-                R.id.nav_submit -> { binding.recyclerView.visibility = View.GONE; binding.uploadContainer.visibility = View.VISIBLE; binding.profileContainer.visibility = View.GONE }
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    binding.recyclerView.visibility = View.VISIBLE
+                    binding.uploadContainer.visibility = View.GONE
+                    binding.profileContainer.visibility = View.GONE
+                    binding.btnSearchIcon.visibility = View.VISIBLE
+                    binding.etSearch.visibility = View.GONE
+                }
+                R.id.nav_shop -> {
+                    binding.recyclerView.visibility = View.VISIBLE
+                    binding.uploadContainer.visibility = View.GONE
+                    binding.profileContainer.visibility = View.GONE
+                    binding.btnSearchIcon.visibility = View.VISIBLE
+                    binding.etSearch.visibility = View.GONE
+                }
+                R.id.nav_profile -> {
+                    binding.recyclerView.visibility = View.GONE
+                    binding.uploadContainer.visibility = View.GONE
+                    binding.profileContainer.visibility = View.VISIBLE
+                    binding.btnSearchIcon.visibility = View.GONE
+                    binding.etSearch.visibility = View.GONE
+                }
+                R.id.nav_submit -> {
+                    binding.recyclerView.visibility = View.GONE
+                    binding.uploadContainer.visibility = View.VISIBLE
+                    binding.profileContainer.visibility = View.GONE
+                    binding.btnSearchIcon.visibility = View.GONE
+                    binding.etSearch.visibility = View.GONE
+                }
             }
             true
         }
+        
         loadShopData()
     }
 
     private fun setupShopView() {
-        shopAdapter = ShopAdapter(shopItems) { position ->
+        shopAdapter = ShopAdapter(filteredItems) { position ->
             val intent = Intent(this, SourceDetailsActivity::class.java)
-            intent.putExtra("source_id", shopItems[position].id)
+            intent.putExtra("source_id", filteredItems[position].id)
             startActivity(intent)
         }
+        
         binding.recyclerView.layoutManager = GridLayoutManager(this, 2)
         binding.recyclerView.adapter = shopAdapter
 
@@ -93,6 +128,28 @@ class HomeActivity : AppCompatActivity() {
                 binding.etSearch.visibility = View.GONE
             }
         }
+
+        binding.etSearch.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                filterShop(s.toString())
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+    }
+
+    private fun filterShop(query: String) {
+        filteredItems.clear()
+        if (query.isEmpty()) {
+            filteredItems.addAll(shopItems)
+        } else {
+            shopItems.forEach {
+                if (it.name.contains(query, ignoreCase = true) || it.desc.contains(query, ignoreCase = true)) {
+                    filteredItems.add(it)
+                }
+            }
+        }
+        shopAdapter.notifyDataSetChanged()
     }
 
     private fun loadShopData() {
@@ -108,7 +165,7 @@ class HomeActivity : AppCompatActivity() {
                         val s = arr.getJSONObject(i)
                         shopItems.add(ShopItem(s.getInt("id"), s.getString("name"), s.getString("description"), s.optString("logo")))
                     }
-                    shopAdapter.notifyDataSetChanged()
+                    filterShop("")
                 }
             }
         }
@@ -177,11 +234,14 @@ class HomeActivity : AppCompatActivity() {
 data class ShopItem(val id: Int, val name: String, val desc: String, val logo: String)
 
 class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) -> Unit) : RecyclerView.Adapter<ShopAdapter.ViewHolder>() {
+
     class ViewHolder(val b: ItemShopBinding) : RecyclerView.ViewHolder(b.root)
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(
-        ItemShopBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-    )
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        return ViewHolder(
+            ItemShopBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        )
+    }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
@@ -199,5 +259,7 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
             .into(holder.b.imgSourceLogo)
     }
 
-    override fun getItemCount() = items.size
+    override fun getItemCount(): Int {
+        return items.size
+    }
 }
