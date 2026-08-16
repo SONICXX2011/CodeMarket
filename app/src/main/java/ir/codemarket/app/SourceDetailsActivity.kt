@@ -1,8 +1,11 @@
 package ir.codemarket.app
 
 import android.os.Bundle
+import android.os.Environment
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -12,29 +15,54 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 
 class SourceDetailsActivity : AppCompatActivity() {
+
     private lateinit var binding: ActivitySourceDetailsBinding
     private lateinit var sessionManager: SessionManager
     private var sourceId: Int = 0
+    private var sourceZipUrl: String = ""
     private val comments = mutableListOf<Pair<String, String>>()
     private lateinit var commentAdapter: CommentAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
         sessionManager = SessionManager(this)
-        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark) else setTheme(R.style.Theme_CodeMarket_Light)
+        
+        if (sessionManager.isDarkMode()) {
+            setTheme(R.style.Theme_CodeMarket_Dark)
+        } else {
+            setTheme(R.style.Theme_CodeMarket_Light)
+        }
+        
         binding = ActivitySourceDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         sourceId = intent.getIntExtra("source_id", 0)
+        
         commentAdapter = CommentAdapter(comments)
         binding.recyclerComments.layoutManager = LinearLayoutManager(this)
         binding.recyclerComments.adapter = commentAdapter
 
-        binding.btnBack.setOnClickListener { finish() }
+        binding.btnBack.setOnClickListener { 
+            finish() 
+        }
+
+        binding.btnDownload.setOnClickListener {
+            if (sourceZipUrl.isNotEmpty()) {
+                downloadFile(sourceZipUrl)
+            } else {
+                Toast.makeText(this, "لینک دانلود برای این سورس موجود نیست", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         loadSourceDetails()
 
@@ -45,10 +73,76 @@ class SourceDetailsActivity : AppCompatActivity() {
                     val payload = JSONObject().put("text", text).toString()
                     val token = sessionManager.fetchAuthToken() ?: ""
                     val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/source/$sourceId/comment", payload, token) }
+                    
                     if (res != null && JSONObject(res).getBoolean("success")) {
                         binding.etComment.text?.clear()
                         loadSourceDetails()
+                        Toast.makeText(this@SourceDetailsActivity, "کامنت ثبت شد", Toast.LENGTH_SHORT).show()
                     }
+                }
+            }
+        }
+    }
+
+    private fun downloadFile(relativeUrl: String) {
+        val baseUrl = NativeLib.getBaseUrl()
+        val fullUrl = if (relativeUrl.startsWith("http")) relativeUrl else baseUrl + relativeUrl
+
+        binding.btnDownload.visibility = View.GONE
+        binding.progressDownload.visibility = View.VISIBLE
+        binding.tvDownloadPercent.visibility = View.VISIBLE
+        binding.progressDownload.progress = 0
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val client = OkHttpClient()
+                val request = Request.Builder().url(fullUrl).build()
+                
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) throw IOException("Download failed")
+                    
+                    val body = response.body ?: throw IOException("Null response body")
+                    val totalBytes = body.contentLength()
+                    var downloadedBytes = 0L
+                    
+                    // ذخیره در پوشه دانلودها
+                    val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                    val file = File(dir, "source_$sourceId.zip")
+                    val inputStream = body.byteStream()
+                    val outputStream = FileOutputStream(file)
+                    val buffer = ByteArray(8192)
+                    var bytesRead: Int
+
+                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                        outputStream.write(buffer, 0, bytesRead)
+                        downloadedBytes += bytesRead
+                        
+                        if (totalBytes > 0) {
+                            val progress = (downloadedBytes * 100 / totalBytes).toInt()
+                            withContext(Dispatchers.Main) {
+                                binding.progressDownload.progress = progress
+                                binding.tvDownloadPercent.text = "در حال دانلود... $progress%"
+                            }
+                        }
+                    }
+                    
+                    outputStream.flush()
+                    outputStream.close()
+                    inputStream.close()
+
+                    withContext(Dispatchers.Main) {
+                        binding.btnDownload.visibility = View.VISIBLE
+                        binding.progressDownload.visibility = View.GONE
+                        binding.tvDownloadPercent.visibility = View.GONE
+                        Toast.makeText(this@SourceDetailsActivity, "دانلود با موفقیت در پوشه Downloads انجام شد!", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@SourceDetailsActivity, "خطا در دانلود: ${e.message}", Toast.LENGTH_SHORT).show()
+                    binding.btnDownload.visibility = View.VISIBLE
+                    binding.progressDownload.visibility = View.GONE
+                    binding.tvDownloadPercent.visibility = View.GONE
                 }
             }
         }
@@ -59,12 +153,17 @@ class SourceDetailsActivity : AppCompatActivity() {
         CoroutineScope(Dispatchers.Main).launch {
             val token = sessionManager.fetchAuthToken() ?: ""
             val (res, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/source/$sourceId", token) }
+            
             if (res != null) {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
                     val source = json.getJSONObject("source")
+                    
                     binding.tvDetailsName.text = source.getString("name")
                     binding.tvDetailsDesc.text = source.getString("description")
+                    
+                    sourceZipUrl = source.optString("zip_file", "")
+                    
                     val arr = source.optJSONArray("comments") ?: JSONArray()
                     for (i in 0 until arr.length()) {
                         val c = arr.getJSONObject(i)
@@ -78,16 +177,21 @@ class SourceDetailsActivity : AppCompatActivity() {
 }
 
 class CommentAdapter(private val items: List<Pair<String, String>>) : RecyclerView.Adapter<CommentAdapter.ViewHolder>() {
+
     class ViewHolder(val b: ItemCommentBinding) : RecyclerView.ViewHolder(b.root)
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(
-        ItemCommentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-    )
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        return ViewHolder(
+            ItemCommentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        )
+    }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.b.tvCommentUser.text = items[position].first
         holder.b.tvCommentText.text = items[position].second
     }
 
-    override fun getItemCount() = items.size
+    override fun getItemCount(): Int {
+        return items.size
+    }
 }
