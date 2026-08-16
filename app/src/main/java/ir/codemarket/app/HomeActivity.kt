@@ -11,9 +11,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import ir.codemarket.app.databinding.ActivityHomeBinding
@@ -50,15 +48,14 @@ class HomeActivity : AppCompatActivity() {
         
         if (sessionManager.isDarkMode()) {
             setTheme(R.style.Theme_CodeMarket_Dark)
-            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
             setTheme(R.style.Theme_CodeMarket_Light)
-            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
         }
         
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // اصلاح ترتیب مقداردهی بک‌گراند
         if (sessionManager.isDarkMode()) {
             binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
