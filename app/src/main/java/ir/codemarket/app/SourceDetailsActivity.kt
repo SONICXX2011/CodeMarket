@@ -2,6 +2,7 @@ package ir.codemarket.app
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -33,6 +34,8 @@ class SourceDetailsActivity : AppCompatActivity() {
         commentAdapter = CommentAdapter(comments)
         binding.recyclerComments.layoutManager = LinearLayoutManager(this)
         binding.recyclerComments.adapter = commentAdapter
+
+        binding.btnBack.setOnClickListener { finish() }
 
         loadSourceDetails()
 
