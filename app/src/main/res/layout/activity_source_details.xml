@@ -2,9 +2,9 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#0F0F0F">
+    android:layout_height="match_parent">
 
     <ImageView
         android:id="@+id/btnBack"
@@ -23,7 +23,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/commentSection"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -36,11 +36,11 @@
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="48dp"
+                android:layout_marginBottom="24dp"
                 app:cardBackgroundColor="#1AFFFFFF"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                android:layout_marginTop="48dp"
-                android:layout_marginBottom="24dp">
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -109,64 +109,50 @@
                 android:visibility="gone"
                 android:progressTint="@color/purple" />
 
-        </LinearLayout>
-    </ScrollView>
+            <LinearLayout
+                android:id="@+id/btnAddComment"
+                android:layout_width="match_parent"
+                android:layout_height="55dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="@drawable/bg_yellow_btn"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="24dp"
+                android:clickable="true"
+                android:focusable="true">
 
-    <LinearLayout
-        android:id="@+id/commentSection"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="#17212B"
-        android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_comment"
+                    app:tint="@android:color/white" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="نظرات کاربران"
-            android:textColor="@android:color/white"
-            android:textStyle="bold"
-            android:textSize="18sp"
-            android:layout_marginBottom="8dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ثبت نظر و امتیاز"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerComments"
-            android:layout_width="match_parent"
-            android:layout_height="250dp"
-            android:nestedScrollingEnabled="true" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/bg_glass_input"
-            android:padding="4dp">
-
-            <EditText
-                android:id="@+id/etComment"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="کامنت بنویسید..."
-                android:textColorHint="#80FFFFFF"
-                android:textColor="@android:color/white"
-                android:background="@android:color/transparent"
-                android:paddingHorizontal="12dp"
-                android:maxLines="1" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSendComment"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ارسال"
-                app:cornerRadius="12dp"
-                app:backgroundTint="@color/purple" />
+                android:text="نظرات کاربران"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:layout_marginBottom="12dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerComments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
         </LinearLayout>
-    </LinearLayout>
+    </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

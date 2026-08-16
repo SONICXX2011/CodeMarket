@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
+    android:layout_marginBottom="12dp"
     app:cardBackgroundColor="#2217212B"
     app:cardCornerRadius="16dp"
     app:cardElevation="0dp">
@@ -12,43 +12,108 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:padding="16dp">
 
-        <de.hdodenhof.circleimageview.CircleImageView
-            android:id="@+id/imgCommentUserPic"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:src="@drawable/ic_sun"
-            app:civ_circle_background_color="#80FFFFFF"
-            android:layout_marginEnd="12dp" />
-
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/tvCommentUser"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ali_dev"
-                android:textColor="#5288C1"
-                android:textStyle="bold"
-                android:textSize="14sp" />
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/imgCommentUserPic"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_sun"
+                app:civ_circle_background_color="#80FFFFFF"
+                android:layout_marginEnd="12dp" />
 
-            <TextView
-                android:id="@+id/tvCommentText"
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="این سورس بسیار عالی و کاربردی بود!"
-                android:textColor="#E0FFFFFF"
-                android:layout_marginTop="4dp"
-                android:textSize="15sp" />
-                
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tvCommentUser"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ali_dev"
+                        android:textColor="#5288C1"
+                        android:textStyle="bold"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvEditedTag"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="(ویرایش شده)"
+                        android:textColor="#80FFFFFF"
+                        android:textSize="10sp"
+                        android:layout_marginStart="6dp"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="2dp">
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_star"
+                        app:tint="#FFC107" />
+
+                    <TextView
+                        android:id="@+id/tvCommentRating"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="8/10"
+                        android:textColor="#FFC107"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:layout_marginStart="4dp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btnEditComment"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_edit"
+                app:tint="#80FFFFFF"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/btnDeleteComment"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_delete"
+                app:tint="#FF5252"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:visibility="gone" />
         </LinearLayout>
-        
+
+        <TextView
+            android:id="@+id/tvCommentText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="این سورس بسیار عالی و کاربردی بود!"
+            android:textColor="#E0FFFFFF"
+            android:layout_marginTop="12dp"
+            android:textSize="15sp" />
+
     </LinearLayout>
-    
 </androidx.cardview.widget.CardView>
