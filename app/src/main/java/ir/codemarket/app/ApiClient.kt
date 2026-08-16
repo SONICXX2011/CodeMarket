@@ -9,6 +9,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
 object ApiClient {
+
     private val client = OkHttpClient()
     private val baseUrl = NativeLib.getBaseUrl()
 
@@ -16,15 +17,23 @@ object ApiClient {
         val request = Request.Builder()
             .url("$baseUrl$endpoint")
             .post(payload.toRequestBody("application/json".toMediaType()))
-            .apply { if (token != null) header("Authorization", "Bearer $token") }
+            .apply { 
+                if (token != null) {
+                    header("Authorization", "Bearer $token")
+                }
+            }
             .build()
+
         return try {
             client.newCall(request).execute().use { response ->
                 val body = response.body?.string()
                 Logger.logNetwork(endpoint, payload, body, response.code)
                 Pair(body, response.code)
             }
-        } catch (e: Exception) { Pair(null, -1) }
+        } catch (e: Exception) {
+            Logger.logEvent("Network Error", "Failed: ${e.message}")
+            Pair(null, -1)
+        }
     }
 
     fun getRequest(endpoint: String, token: String): Pair<String?, Int> {
@@ -33,19 +42,25 @@ object ApiClient {
             .get()
             .header("Authorization", "Bearer $token")
             .build()
+
         return try {
             client.newCall(request).execute().use { response ->
                 val body = response.body?.string()
                 Logger.logNetwork(endpoint, "GET", body, response.code)
                 Pair(body, response.code)
             }
-        } catch (e: Exception) { Pair(null, -1) }
+        } catch (e: Exception) {
+            Pair(null, -1)
+        }
     }
 
     fun uploadFile(endpoint: String, token: String, zipFile: File, logoFile: File, fields: Map<String, String>): Pair<String?, Int> {
         val multipartBuilder = MultipartBody.Builder().setType(MultipartBody.FORM)
         
-        fields.forEach { (key, value) -> multipartBuilder.addFormDataPart(key, value) }
+        fields.forEach { (key, value) -> 
+            multipartBuilder.addFormDataPart(key, value) 
+        }
+        
         multipartBuilder.addFormDataPart("zip_file", zipFile.name, zipFile.asRequestBody("application/zip".toMediaType()))
         multipartBuilder.addFormDataPart("logo", logoFile.name, logoFile.asRequestBody("image/png".toMediaType()))
 
@@ -61,6 +76,55 @@ object ApiClient {
                 Logger.logNetwork(endpoint, "MULTIPART", body, response.code)
                 Pair(body, response.code)
             }
-        } catch (e: Exception) { Pair(null, -1) }
+        } catch (e: Exception) { 
+            Pair(null, -1) 
+        }
+    }
+
+    fun uploadProfilePic(endpoint: String, token: String, picFile: File): Pair<String?, Int> {
+        val multipartBuilder = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("pic", picFile.name, picFile.asRequestBody("image/png".toMediaType()))
+
+        val request = Request.Builder()
+            .url("$baseUrl$endpoint")
+            .post(multipartBuilder.build())
+            .header("Authorization", "Bearer $token")
+            .build()
+
+        return try {
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string()
+                Logger.logNetwork(endpoint, "UPLOAD_PIC", body, response.code)
+                Pair(body, response.code)
+            }
+        } catch (e: Exception) { 
+            Pair(null, -1) 
+        }
+    }
+
+    fun uploadPost(endpoint: String, token: String, text: String, mediaFile: File?): Pair<String?, Int> {
+        val multipartBuilder = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("text", text)
+        
+        if (mediaFile != null) {
+            val mimeType = if (mediaFile.extension == "mp4") "video/mp4" else "image/jpeg"
+            multipartBuilder.addFormDataPart("media", mediaFile.name, mediaFile.asRequestBody(mimeType.toMediaType()))
+        }
+
+        val request = Request.Builder()
+            .url("$baseUrl$endpoint")
+            .post(multipartBuilder.build())
+            .header("Authorization", "Bearer $token")
+            .build()
+
+        return try {
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string()
+                Logger.logNetwork(endpoint, "UPLOAD_POST", body, response.code)
+                Pair(body, response.code)
+            }
+        } catch (e: Exception) { 
+            Pair(null, -1) 
+        }
     }
 }

@@ -12,9 +12,12 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import de.hdodenhof.circleimageview.CircleImageView
 import ir.codemarket.app.databinding.ActivityHomeBinding
+import ir.codemarket.app.databinding.ItemFeedPostBinding
 import ir.codemarket.app.databinding.ItemShopBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,18 +30,37 @@ class HomeActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHomeBinding
     private lateinit var sessionManager: SessionManager
+    
     private val shopItems = mutableListOf<ShopItem>()
     private val filteredItems = mutableListOf<ShopItem>()
     private lateinit var shopAdapter: ShopAdapter
+    
+    private val feedItems = mutableListOf<FeedItem>()
+    private lateinit var feedAdapter: FeedAdapter
+    
     private var selectedZipUri: Uri? = null
     private var selectedLogoUri: Uri? = null
+    private var selectedProfilePicUri: Uri? = null
 
     private val pickZip = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { selectedZipUri = it; binding.btnSelectZip.text = "فایل ZIP انتخاب شد" }
+        uri?.let { 
+            selectedZipUri = it
+            binding.btnSelectZip.text = "فایل ZIP انتخاب شد"
+        }
     }
 
     private val pickLogo = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { selectedLogoUri = it; binding.btnSelectLogo.text = "لوگو انتخاب شد" }
+        uri?.let { 
+            selectedLogoUri = it
+            binding.btnSelectLogo.text = "لوگو انتخاب شد"
+        }
+    }
+
+    private val pickProfilePic = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { 
+            selectedProfilePicUri = it
+            uploadProfilePic(it)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +77,6 @@ class HomeActivity : AppCompatActivity() {
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // اصلاح ترتیب مقداردهی بک‌گراند
         if (sessionManager.isDarkMode()) {
             binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
@@ -63,6 +84,7 @@ class HomeActivity : AppCompatActivity() {
         }
 
         setupShopView()
+        setupFeedView()
         setupUploadView()
         setupProfileView()
 
@@ -71,41 +93,54 @@ class HomeActivity : AppCompatActivity() {
             recreate()
         }
 
+        binding.btnAddPost.setOnClickListener {
+            startActivity(Intent(this, CreatePostActivity::class.java))
+        }
+
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    binding.recyclerView.visibility = View.VISIBLE
+                    binding.homeContainer.visibility = View.VISIBLE
+                    binding.recyclerView.visibility = View.GONE
                     binding.uploadContainer.visibility = View.GONE
                     binding.profileContainer.visibility = View.GONE
-                    binding.btnSearchIcon.visibility = View.VISIBLE
+                    binding.btnSearchIcon.visibility = View.GONE
                     binding.etSearch.visibility = View.GONE
+                    binding.btnAddPost.visibility = View.VISIBLE
                 }
                 R.id.nav_shop -> {
+                    binding.homeContainer.visibility = View.GONE
                     binding.recyclerView.visibility = View.VISIBLE
                     binding.uploadContainer.visibility = View.GONE
                     binding.profileContainer.visibility = View.GONE
                     binding.btnSearchIcon.visibility = View.VISIBLE
                     binding.etSearch.visibility = View.GONE
+                    binding.btnAddPost.visibility = View.GONE
                 }
                 R.id.nav_profile -> {
+                    binding.homeContainer.visibility = View.GONE
                     binding.recyclerView.visibility = View.GONE
                     binding.uploadContainer.visibility = View.GONE
                     binding.profileContainer.visibility = View.VISIBLE
                     binding.btnSearchIcon.visibility = View.GONE
                     binding.etSearch.visibility = View.GONE
+                    binding.btnAddPost.visibility = View.GONE
                 }
                 R.id.nav_submit -> {
+                    binding.homeContainer.visibility = View.GONE
                     binding.recyclerView.visibility = View.GONE
                     binding.uploadContainer.visibility = View.VISIBLE
                     binding.profileContainer.visibility = View.GONE
                     binding.btnSearchIcon.visibility = View.GONE
                     binding.etSearch.visibility = View.GONE
+                    binding.btnAddPost.visibility = View.GONE
                 }
             }
             true
         }
         
         loadShopData()
+        loadFeedData()
     }
 
     private fun setupShopView() {
@@ -119,17 +154,11 @@ class HomeActivity : AppCompatActivity() {
         binding.recyclerView.adapter = shopAdapter
 
         binding.btnSearchIcon.setOnClickListener {
-            if (binding.etSearch.visibility == View.GONE) {
-                binding.etSearch.visibility = View.VISIBLE
-            } else {
-                binding.etSearch.visibility = View.GONE
-            }
+            binding.etSearch.visibility = if (binding.etSearch.visibility == View.GONE) View.VISIBLE else View.GONE
         }
 
         binding.etSearch.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                filterShop(s.toString())
-            }
+            override fun afterTextChanged(s: Editable?) { filterShop(s.toString()) }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
@@ -168,6 +197,37 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupFeedView() {
+        feedAdapter = FeedAdapter(feedItems)
+        binding.recyclerFeed.layoutManager = LinearLayoutManager(this)
+        binding.recyclerFeed.adapter = feedAdapter
+    }
+
+    private fun loadFeedData() {
+        val token = sessionManager.fetchAuthToken() ?: ""
+        CoroutineScope(Dispatchers.Main).launch {
+            val (response, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/feed", token) }
+            if (response != null) {
+                val json = JSONObject(response)
+                if (json.getBoolean("success")) {
+                    val arr = json.getJSONArray("posts")
+                    feedItems.clear()
+                    for (i in 0 until arr.length()) {
+                        val p = arr.getJSONObject(i)
+                        feedItems.add(FeedItem(
+                            p.optString("username"),
+                            p.optString("user_pic"),
+                            p.optString("text"),
+                            p.optString("media"),
+                            p.optString("media_type")
+                        ))
+                    }
+                    feedAdapter.notifyDataSetChanged()
+                }
+            }
+        }
+    }
+
     private fun setupUploadView() {
         binding.btnSelectLogo.setOnClickListener { pickLogo.launch("image/*") }
         binding.btnSelectZip.setOnClickListener { pickZip.launch("application/zip") }
@@ -195,9 +255,8 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun setupProfileView() {
-        binding.btnChangePic.setOnClickListener { 
-            Toast.makeText(this, "قابلیت آپلود عکس به زودی اضافه می‌شود", Toast.LENGTH_SHORT).show()
-        }
+        binding.btnChangePic.setOnClickListener { pickProfilePic.launch("image/*") }
+        
         binding.btnUpdateProfile.setOnClickListener {
             val fullName = binding.etFullName.text.toString()
             CoroutineScope(Dispatchers.Main).launch {
@@ -207,6 +266,7 @@ class HomeActivity : AppCompatActivity() {
                 Toast.makeText(this@HomeActivity, "پروفایل آپدیت شد", Toast.LENGTH_SHORT).show()
             }
         }
+        
         CoroutineScope(Dispatchers.Main).launch {
             val token = sessionManager.fetchAuthToken() ?: ""
             val (res, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/profile", token) }
@@ -216,7 +276,29 @@ class HomeActivity : AppCompatActivity() {
                     binding.etFullName.setText(json.getString("full_name"))
                     binding.tvUsernameProfile.text = "@" + json.getString("username")
                     binding.tvEmailProfile.text = json.getString("email")
+                    
+                    val picUrl = json.optString("profile_pic", "")
+                    if (picUrl.isNotEmpty()) {
+                        val baseUrl = NativeLib.getBaseUrl()
+                        val fullPicUrl = if (picUrl.startsWith("http")) picUrl else baseUrl + picUrl
+                        Glide.with(this@HomeActivity)
+                            .load(fullPicUrl)
+                            .placeholder(R.drawable.ic_sun)
+                            .into(binding.imgProfile)
+                    }
                 }
+            }
+        }
+    }
+
+    private fun uploadProfilePic(uri: Uri) {
+        val file = File(cacheDir, "temp_profile.png").apply { copyFromUri(uri) }
+        CoroutineScope(Dispatchers.Main).launch {
+            val token = sessionManager.fetchAuthToken() ?: ""
+            val (res, _) = withContext(Dispatchers.IO) { ApiClient.uploadProfilePic("/api/profile/upload_pic", token, file) }
+            if (res != null && JSONObject(res).getBoolean("success")) {
+                Toast.makeText(this@HomeActivity, "عکس پروفایل آپدیت شد", Toast.LENGTH_SHORT).show()
+                recreate()
             }
         }
     }
@@ -229,15 +311,14 @@ class HomeActivity : AppCompatActivity() {
 }
 
 data class ShopItem(val id: Int, val name: String, val desc: String, val logo: String)
+data class FeedItem(val username: String, val userPic: String, val text: String, val media: String, val mediaType: String)
 
 class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) -> Unit) : RecyclerView.Adapter<ShopAdapter.ViewHolder>() {
-
+    
     class ViewHolder(val b: ItemShopBinding) : RecyclerView.ViewHolder(b.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(
-            ItemShopBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        )
+        return ViewHolder(ItemShopBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -252,11 +333,45 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
         Glide.with(holder.b.root.context)
             .load(fullLogoUrl)
             .placeholder(R.drawable.ic_sun)
-            .error(R.drawable.ic_sun)
             .into(holder.b.imgSourceLogo)
     }
 
-    override fun getItemCount(): Int {
-        return items.size
+    override fun getItemCount(): Int = items.size
+}
+
+class FeedAdapter(private val items: List<FeedItem>) : RecyclerView.Adapter<FeedAdapter.ViewHolder>() {
+    
+    class ViewHolder(val b: ItemFeedPostBinding) : RecyclerView.ViewHolder(b.root)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        return ViewHolder(ItemFeedPostBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = items[position]
+        holder.b.tvUsername.text = item.username
+        holder.b.tvPostText.text = item.text
+        
+        val baseUrl = NativeLib.getBaseUrl()
+        
+        if (item.userPic.isNotEmpty()) {
+            val picUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
+            Glide.with(holder.b.root.context)
+                .load(picUrl)
+                .placeholder(R.drawable.ic_sun)
+                .into(holder.b.imgUserPic)
+        }
+        
+        if (item.media.isNotEmpty() && item.mediaType == "image") {
+            val mediaUrl = if (item.media.startsWith("http")) item.media else baseUrl + item.media
+            Glide.with(holder.b.root.context)
+                .load(mediaUrl)
+                .into(holder.b.imgPostMedia)
+            holder.b.imgPostMedia.visibility = View.VISIBLE
+        } else {
+            holder.b.imgPostMedia.visibility = View.GONE
+        }
+    }
+
+    override fun getItemCount(): Int = items.size
 }

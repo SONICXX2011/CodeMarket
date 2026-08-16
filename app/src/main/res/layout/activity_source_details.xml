@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="#0F0F0F">
 
-    <!-- دکمه برگشت بلور شده در گوشه -->
     <ImageView
         android:id="@+id/btnBack"
         android:layout_width="48dp"
@@ -34,7 +33,6 @@
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- کارت شیشه‌ای بالای صفحه -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -51,13 +49,12 @@
                     android:gravity="center"
                     android:padding="32dp">
 
-                    <ImageView
+                    <de.hdodenhof.circleimageview.CircleImageView
                         android:id="@+id/imgDetailsLogo"
                         android:layout_width="100dp"
                         android:layout_height="100dp"
                         android:src="@drawable/ic_sun"
-                        android:scaleType="centerCrop"
-                        android:background="@drawable/bg_circle_glass"
+                        app:civ_circle_background_color="#80FFFFFF"
                         android:padding="16dp" />
 
                     <TextView
@@ -82,7 +79,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- بخش دانلود -->
             <Button
                 android:id="@+id/btnDownload"
                 android:layout_width="match_parent"
@@ -116,7 +112,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- بخش کامنت‌ها -->
     <LinearLayout
         android:id="@+id/commentSection"
         android:layout_width="0dp"

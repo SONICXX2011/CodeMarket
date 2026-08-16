@@ -27,7 +27,10 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 
@@ -72,11 +75,12 @@ dependencies {
     // Network (OkHttp)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    // Image Loading (Glide)
+    // Image Loading (Glide & CircleImageView)
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+    implementation("de.hdodenhof:circleimageview:3.1.0")
 
-    // کتابخانه های Jetpack Compose
+    // کتابخانه‌های Jetpack Compose (برای حفظ فایل‌های پوشه ui)
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
