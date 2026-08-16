@@ -21,10 +21,11 @@ class CreatePostActivity : AppCompatActivity() {
     private lateinit var sessionManager: SessionManager
     private var selectedMediaUri: Uri? = null
 
+    // فقط اجازه انتخاب عکس داده می‌شود (image/*)
     private val pickMedia = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedMediaUri = it
-            binding.imgPreview.visibility = View.VISIBLE
+            binding.cardPreview.visibility = View.VISIBLE
             Glide.with(this).load(it).into(binding.imgPreview)
         }
     }
@@ -32,14 +33,29 @@ class CreatePostActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sessionManager = SessionManager(this)
-        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark) else setTheme(R.style.Theme_CodeMarket_Light)
+        if (sessionManager.isDarkMode()) {
+            setTheme(R.style.Theme_CodeMarket_Dark)
+        } else {
+            setTheme(R.style.Theme_CodeMarket_Light)
+        }
         
         binding = ActivityCreatePostBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.btnBack.setOnClickListener { finish() }
+        binding.btnBack.setOnClickListener { 
+            finish() 
+        }
 
-        binding.btnPickMedia.setOnClickListener { pickMedia.launch("*/*") }
+        binding.btnPickMedia.setOnClickListener { 
+            pickMedia.launch("image/*") 
+        }
+
+        // دکمه حذف عکس انتخاب شده
+        binding.btnRemoveImage.setOnClickListener {
+            selectedMediaUri = null
+            binding.imgPreview.setImageDrawable(null)
+            binding.cardPreview.visibility = View.GONE
+        }
 
         binding.btnPost.setOnClickListener {
             val text = binding.etPostText.text.toString()
