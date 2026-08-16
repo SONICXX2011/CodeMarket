@@ -8,13 +8,16 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.hdodenhof.circleimageview.CircleImageView
 import ir.codemarket.app.databinding.ActivityHomeBinding
 import ir.codemarket.app.databinding.ItemFeedPostBinding
@@ -23,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
@@ -30,34 +34,34 @@ class HomeActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHomeBinding
     private lateinit var sessionManager: SessionManager
-    
+
     private val shopItems = mutableListOf<ShopItem>()
     private val filteredItems = mutableListOf<ShopItem>()
     private lateinit var shopAdapter: ShopAdapter
-    
+
     private val feedItems = mutableListOf<FeedItem>()
     private lateinit var feedAdapter: FeedAdapter
-    
+
     private var selectedZipUri: Uri? = null
     private var selectedLogoUri: Uri? = null
     private var selectedProfilePicUri: Uri? = null
 
     private val pickZip = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { 
+        uri?.let {
             selectedZipUri = it
             binding.btnSelectZip.text = "فایل ZIP انتخاب شد"
         }
     }
 
     private val pickLogo = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { 
+        uri?.let {
             selectedLogoUri = it
             binding.btnSelectLogo.text = "لوگو انتخاب شد"
         }
     }
 
     private val pickProfilePic = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { 
+        uri?.let {
             selectedProfilePicUri = it
             uploadProfilePic(it)
         }
@@ -65,15 +69,15 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         sessionManager = SessionManager(this)
-        
+
         if (sessionManager.isDarkMode()) {
             setTheme(R.style.Theme_CodeMarket_Dark)
         } else {
             setTheme(R.style.Theme_CodeMarket_Light)
         }
-        
+
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -138,7 +142,7 @@ class HomeActivity : AppCompatActivity() {
             }
             true
         }
-        
+
         loadShopData()
         loadFeedData()
     }
@@ -149,7 +153,7 @@ class HomeActivity : AppCompatActivity() {
             intent.putExtra("source_id", filteredItems[position].id)
             startActivity(intent)
         }
-        
+
         binding.recyclerView.layoutManager = GridLayoutManager(this, 2)
         binding.recyclerView.adapter = shopAdapter
 
@@ -198,7 +202,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun setupFeedView() {
-        feedAdapter = FeedAdapter(feedItems)
+        feedAdapter = FeedAdapter(feedItems, this)
         binding.recyclerFeed.layoutManager = LinearLayoutManager(this)
         binding.recyclerFeed.adapter = feedAdapter
     }
@@ -214,12 +218,20 @@ class HomeActivity : AppCompatActivity() {
                     feedItems.clear()
                     for (i in 0 until arr.length()) {
                         val p = arr.getJSONObject(i)
+                        val likesArr = p.optJSONArray("likes") ?: JSONArray()
+                        val likes = mutableListOf<Int>()
+                        for (j in 0 until likesArr.length()) {
+                            likes.add(likesArr.getInt(j))
+                        }
                         feedItems.add(FeedItem(
+                            p.getInt("id"),
                             p.optString("username"),
                             p.optString("user_pic"),
                             p.optString("text"),
                             p.optString("media"),
-                            p.optString("media_type")
+                            p.optString("media_type"),
+                            likes,
+                            p.optInt("comments", 0) // временно для каунта, если есть массив надо парсить
                         ))
                     }
                     feedAdapter.notifyDataSetChanged()
@@ -256,7 +268,7 @@ class HomeActivity : AppCompatActivity() {
 
     private fun setupProfileView() {
         binding.btnChangePic.setOnClickListener { pickProfilePic.launch("image/*") }
-        
+
         binding.btnUpdateProfile.setOnClickListener {
             val fullName = binding.etFullName.text.toString()
             CoroutineScope(Dispatchers.Main).launch {
@@ -266,7 +278,7 @@ class HomeActivity : AppCompatActivity() {
                 Toast.makeText(this@HomeActivity, "پروفایل آپدیت شد", Toast.LENGTH_SHORT).show()
             }
         }
-        
+
         CoroutineScope(Dispatchers.Main).launch {
             val token = sessionManager.fetchAuthToken() ?: ""
             val (res, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/profile", token) }
@@ -276,7 +288,7 @@ class HomeActivity : AppCompatActivity() {
                     binding.etFullName.setText(json.getString("full_name"))
                     binding.tvUsernameProfile.text = "@" + json.getString("username")
                     binding.tvEmailProfile.text = json.getString("email")
-                    
+
                     val picUrl = json.optString("profile_pic", "")
                     if (picUrl.isNotEmpty()) {
                         val baseUrl = NativeLib.getBaseUrl()
@@ -311,10 +323,19 @@ class HomeActivity : AppCompatActivity() {
 }
 
 data class ShopItem(val id: Int, val name: String, val desc: String, val logo: String)
-data class FeedItem(val username: String, val userPic: String, val text: String, val media: String, val mediaType: String)
+data class FeedItem(
+    val id: Int,
+    val username: String,
+    val userPic: String,
+    val text: String,
+    val media: String,
+    val mediaType: String,
+    val likes: List<Int>,
+    val commentCount: Int
+)
 
 class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) -> Unit) : RecyclerView.Adapter<ShopAdapter.ViewHolder>() {
-    
+
     class ViewHolder(val b: ItemShopBinding) : RecyclerView.ViewHolder(b.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -326,10 +347,10 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
         holder.b.tvSourceName.text = item.name
         holder.b.tvSourceDesc.text = item.desc
         holder.b.root.setOnClickListener { onClick(position) }
-        
+
         val baseUrl = NativeLib.getBaseUrl()
         val fullLogoUrl = if (item.logo.startsWith("http")) item.logo else baseUrl + item.logo
-        
+
         Glide.with(holder.b.root.context)
             .load(fullLogoUrl)
             .placeholder(R.drawable.ic_sun)
@@ -339,8 +360,8 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
     override fun getItemCount(): Int = items.size
 }
 
-class FeedAdapter(private val items: List<FeedItem>) : RecyclerView.Adapter<FeedAdapter.ViewHolder>() {
-    
+class FeedAdapter(private val items: List<FeedItem>, private val activity: HomeActivity) : RecyclerView.Adapter<FeedAdapter.ViewHolder>() {
+
     class ViewHolder(val b: ItemFeedPostBinding) : RecyclerView.ViewHolder(b.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -351,9 +372,11 @@ class FeedAdapter(private val items: List<FeedItem>) : RecyclerView.Adapter<Feed
         val item = items[position]
         holder.b.tvUsername.text = item.username
         holder.b.tvPostText.text = item.text
-        
+        holder.b.tvLikeCount.text = item.likes.size.toString()
+        holder.b.tvCommentCount.text = item.commentCount.toString()
+
         val baseUrl = NativeLib.getBaseUrl()
-        
+
         if (item.userPic.isNotEmpty()) {
             val picUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
             Glide.with(holder.b.root.context)
@@ -361,7 +384,7 @@ class FeedAdapter(private val items: List<FeedItem>) : RecyclerView.Adapter<Feed
                 .placeholder(R.drawable.ic_sun)
                 .into(holder.b.imgUserPic)
         }
-        
+
         if (item.media.isNotEmpty() && item.mediaType == "image") {
             val mediaUrl = if (item.media.startsWith("http")) item.media else baseUrl + item.media
             Glide.with(holder.b.root.context)
@@ -370,6 +393,27 @@ class FeedAdapter(private val items: List<FeedItem>) : RecyclerView.Adapter<Feed
             holder.b.imgPostMedia.visibility = View.VISIBLE
         } else {
             holder.b.imgPostMedia.visibility = View.GONE
+        }
+
+        // Лайк логикасы
+        val sessionManager = SessionManager(activity)
+        val userId = sessionManager.fetchAuthToken()?.let { NativeLib.verifyToken(it) } ?: -1
+
+        val isLiked = item.likes.contains(userId)
+        if (isLiked) {
+            holder.b.imgLike.setColorFilter(activity.getColor(R.color.purple))
+            holder.b.tvLikeCount.setTextColor(activity.getColor(R.color.purple))
+        } else {
+            holder.b.imgLike.setColorFilter(activity.getColor(android.R.color.darker_gray))
+            holder.b.tvLikeCount.setTextColor(activity.getColor(android.R.color.darker_gray))
+        }
+
+        holder.b.btnLike.setOnClickListener {
+            activity.toggleLike(item.id, position)
+        }
+
+        holder.b.btnComment.setOnClickListener {
+            activity.showCommentDialog(item.id, position)
         }
     }
 

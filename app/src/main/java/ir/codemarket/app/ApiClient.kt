@@ -17,7 +17,7 @@ object ApiClient {
         val request = Request.Builder()
             .url("$baseUrl$endpoint")
             .post(payload.toRequestBody("application/json".toMediaType()))
-            .apply { 
+            .apply {
                 if (token != null) {
                     header("Authorization", "Bearer $token")
                 }
@@ -56,11 +56,11 @@ object ApiClient {
 
     fun uploadFile(endpoint: String, token: String, zipFile: File, logoFile: File, fields: Map<String, String>): Pair<String?, Int> {
         val multipartBuilder = MultipartBody.Builder().setType(MultipartBody.FORM)
-        
-        fields.forEach { (key, value) -> 
-            multipartBuilder.addFormDataPart(key, value) 
+
+        fields.forEach { (key, value) ->
+            multipartBuilder.addFormDataPart(key, value)
         }
-        
+
         multipartBuilder.addFormDataPart("zip_file", zipFile.name, zipFile.asRequestBody("application/zip".toMediaType()))
         multipartBuilder.addFormDataPart("logo", logoFile.name, logoFile.asRequestBody("image/png".toMediaType()))
 
@@ -76,8 +76,8 @@ object ApiClient {
                 Logger.logNetwork(endpoint, "MULTIPART", body, response.code)
                 Pair(body, response.code)
             }
-        } catch (e: Exception) { 
-            Pair(null, -1) 
+        } catch (e: Exception) {
+            Pair(null, -1)
         }
     }
 
@@ -97,15 +97,15 @@ object ApiClient {
                 Logger.logNetwork(endpoint, "UPLOAD_PIC", body, response.code)
                 Pair(body, response.code)
             }
-        } catch (e: Exception) { 
-            Pair(null, -1) 
+        } catch (e: Exception) {
+            Pair(null, -1)
         }
     }
 
     fun uploadPost(endpoint: String, token: String, text: String, mediaFile: File?): Pair<String?, Int> {
         val multipartBuilder = MultipartBody.Builder().setType(MultipartBody.FORM)
             .addFormDataPart("text", text)
-        
+
         if (mediaFile != null) {
             val mimeType = if (mediaFile.extension == "mp4") "video/mp4" else "image/jpeg"
             multipartBuilder.addFormDataPart("media", mediaFile.name, mediaFile.asRequestBody(mimeType.toMediaType()))
@@ -123,8 +123,8 @@ object ApiClient {
                 Logger.logNetwork(endpoint, "UPLOAD_POST", body, response.code)
                 Pair(body, response.code)
             }
-        } catch (e: Exception) { 
-            Pair(null, -1) 
+        } catch (e: Exception) {
+            Pair(null, -1)
         }
     }
 }
