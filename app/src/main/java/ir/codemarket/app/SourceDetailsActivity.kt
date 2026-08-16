@@ -1,7 +1,6 @@
 package ir.codemarket.app
 
 import android.content.ContentValues
-import android.content.DialogInterface
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -10,7 +9,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -42,7 +40,6 @@ class SourceDetailsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         sessionManager = SessionManager(this)
         
-        // اعمال تم روی کل صفحه
         if (sessionManager.isDarkMode()) {
             setTheme(R.style.Theme_CodeMarket_Dark)
             window.decorView.setBackgroundResource(R.drawable.bg_gradient_dark)

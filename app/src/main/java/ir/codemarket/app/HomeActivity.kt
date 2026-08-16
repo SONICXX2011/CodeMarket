@@ -67,8 +67,10 @@ class HomeActivity : AppCompatActivity() {
 
         if (sessionManager.isDarkMode()) {
             setTheme(R.style.Theme_CodeMarket_Dark)
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
             setTheme(R.style.Theme_CodeMarket_Light)
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
         }
 
         binding = ActivityHomeBinding.inflate(layoutInflater)
@@ -221,7 +223,8 @@ class HomeActivity : AppCompatActivity() {
                             p.optBoolean("is_liked"),
                             p.optInt("like_count"),
                             p.optInt("comment_count"),
-                            p.optInt("views")
+                            p.optInt("views"),
+                            p.optString("created_at")
                         ))
                     }
                     feedAdapter.notifyDataSetChanged()
@@ -348,7 +351,8 @@ data class FeedItem(
     val isLiked: Boolean,
     val likeCount: Int,
     val commentCount: Int,
-    val views: Int
+    val views: Int,
+    val createdAt: String
 )
 
 class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) -> Unit) : RecyclerView.Adapter<ShopAdapter.ViewHolder>() {
@@ -396,6 +400,9 @@ class FeedAdapter(
         holder.b.tvLikeCount.text = item.likeCount.toString()
         holder.b.tvCommentCount.text = item.commentCount.toString()
         holder.b.tvViewsCount.text = item.views.toString()
+        
+        // نمایش زمان واقعی
+        holder.b.tvPostDate.text = TimeUtils.getTimeAgo(item.createdAt)
 
         val baseUrl = NativeLib.getBaseUrl()
         

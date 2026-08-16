@@ -33,8 +33,10 @@ class PostDetailsActivity : AppCompatActivity() {
         
         if (sessionManager.isDarkMode()) {
             setTheme(R.style.Theme_CodeMarket_Dark)
+            window.decorView.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
             setTheme(R.style.Theme_CodeMarket_Light)
+            window.decorView.setBackgroundResource(R.drawable.bg_gradient_light)
         }
         
         binding = ActivityPostDetailsBinding.inflate(layoutInflater)
@@ -42,7 +44,7 @@ class PostDetailsActivity : AppCompatActivity() {
 
         postId = intent.getIntExtra("post_id", 0)
         
-        commentAdapter = CommentAdapter(comments)
+        commentAdapter = CommentAdapter(comments, 0, { }, { })
         binding.recyclerComments.layoutManager = LinearLayoutManager(this)
         binding.recyclerComments.adapter = commentAdapter
 
@@ -100,9 +102,13 @@ class PostDetailsActivity : AppCompatActivity() {
                     for (i in 0 until arr.length()) {
                         val c = arr.getJSONObject(i)
                         comments.add(CommentData(
-                            c.getString("username"), 
-                            c.getString("text"), 
-                            c.optString("user_pic")
+                            c.optInt("id", 0),
+                            c.optInt("user_id", 0),
+                            c.getString("username"),
+                            c.getString("text"),
+                            c.optString("user_pic"),
+                            0,
+                            c.optBoolean("is_edited", false)
                         ))
                     }
                     commentAdapter.notifyDataSetChanged()
@@ -126,32 +132,4 @@ class PostDetailsActivity : AppCompatActivity() {
             }
         }
     }
-}
-
-data class CommentData(val username: String, val text: String, val userPic: String)
-
-class CommentAdapter(private val items: List<CommentData>) : RecyclerView.Adapter<CommentAdapter.ViewHolder>() {
-
-    class ViewHolder(val b: ItemCommentBinding) : RecyclerView.ViewHolder(b.root)
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(ItemCommentBinding.inflate(LayoutInflater.from(parent.context), parent, false))
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = items[position]
-        holder.b.tvCommentUser.text = item.username
-        holder.b.tvCommentText.text = item.text
-        
-        val baseUrl = NativeLib.getBaseUrl()
-        if (item.userPic.isNotEmpty()) {
-            val picUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
-            Glide.with(holder.b.root.context)
-                .load(picUrl)
-                .placeholder(R.drawable.ic_sun)
-                .into(holder.b.imgCommentUserPic)
-        }
-    }
-
-    override fun getItemCount(): Int = items.size
 }
