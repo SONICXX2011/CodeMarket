@@ -67,15 +67,15 @@ class HomeActivity : AppCompatActivity() {
 
         if (sessionManager.isDarkMode()) {
             setTheme(R.style.Theme_CodeMarket_Dark)
-            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
             setTheme(R.style.Theme_CodeMarket_Light)
-            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
         }
 
+        // اصلاح شد: ابتدا binding مقداردهی می‌شود
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // سپس تغییرات روی آن اعمال می‌شود
         if (sessionManager.isDarkMode()) {
             binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
