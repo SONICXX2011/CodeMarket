@@ -304,7 +304,7 @@ class CommentAdapter(
             val picUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
             Glide.with(holder.b.root.context)
                 .load(picUrl)
-                .placeholder(R.drawable/ic_sun)
+                .placeholder(R.drawable.ic_sun)
                 .into(holder.b.imgCommentUserPic)
         }
 
