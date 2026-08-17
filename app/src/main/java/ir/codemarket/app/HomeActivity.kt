@@ -71,11 +71,9 @@ class HomeActivity : AppCompatActivity() {
             setTheme(R.style.Theme_CodeMarket_Light)
         }
 
-        // اصلاح شد: ابتدا binding مقداردهی می‌شود
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // سپس تغییرات روی آن اعمال می‌شود
         if (sessionManager.isDarkMode()) {
             binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
@@ -95,11 +93,16 @@ class HomeActivity : AppCompatActivity() {
         binding.btnAddPost.setOnClickListener {
             startActivity(Intent(this, CreatePostActivity::class.java))
         }
+        
+        // قابلیت رفرش
+        binding.swipeRefresh.setOnRefreshListener {
+            loadFeedData()
+        }
 
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    binding.homeContainer.visibility = View.VISIBLE
+                    binding.swipeRefresh.visibility = View.VISIBLE
                     binding.recyclerView.visibility = View.GONE
                     binding.uploadContainer.visibility = View.GONE
                     binding.profileContainer.visibility = View.GONE
@@ -108,7 +111,7 @@ class HomeActivity : AppCompatActivity() {
                     binding.btnAddPost.visibility = View.VISIBLE
                 }
                 R.id.nav_shop -> {
-                    binding.homeContainer.visibility = View.GONE
+                    binding.swipeRefresh.visibility = View.GONE
                     binding.recyclerView.visibility = View.VISIBLE
                     binding.uploadContainer.visibility = View.GONE
                     binding.profileContainer.visibility = View.GONE
@@ -117,7 +120,7 @@ class HomeActivity : AppCompatActivity() {
                     binding.btnAddPost.visibility = View.GONE
                 }
                 R.id.nav_profile -> {
-                    binding.homeContainer.visibility = View.GONE
+                    binding.swipeRefresh.visibility = View.GONE
                     binding.recyclerView.visibility = View.GONE
                     binding.uploadContainer.visibility = View.GONE
                     binding.profileContainer.visibility = View.VISIBLE
@@ -126,7 +129,7 @@ class HomeActivity : AppCompatActivity() {
                     binding.btnAddPost.visibility = View.GONE
                 }
                 R.id.nav_submit -> {
-                    binding.homeContainer.visibility = View.GONE
+                    binding.swipeRefresh.visibility = View.GONE
                     binding.recyclerView.visibility = View.GONE
                     binding.uploadContainer.visibility = View.VISIBLE
                     binding.profileContainer.visibility = View.GONE
@@ -206,6 +209,7 @@ class HomeActivity : AppCompatActivity() {
         val token = sessionManager.fetchAuthToken() ?: ""
         CoroutineScope(Dispatchers.Main).launch {
             val (response, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/feed", token) }
+            binding.swipeRefresh.isRefreshing = false
             if (response != null) {
                 val json = JSONObject(response)
                 if (json.getBoolean("success")) {
@@ -401,7 +405,6 @@ class FeedAdapter(
         holder.b.tvCommentCount.text = item.commentCount.toString()
         holder.b.tvViewsCount.text = item.views.toString()
         
-        // نمایش زمان واقعی
         holder.b.tvPostDate.text = TimeUtils.getTimeAgo(item.createdAt)
 
         val baseUrl = NativeLib.getBaseUrl()

@@ -34,7 +34,6 @@ class SourceDetailsActivity : AppCompatActivity() {
     private var sourceZipUrl: String = ""
     private val comments = mutableListOf<CommentData>()
     private lateinit var commentAdapter: CommentAdapter
-    private var currentUserId: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,9 +52,10 @@ class SourceDetailsActivity : AppCompatActivity() {
 
         sourceId = intent.getIntExtra("source_id", 0)
         
-        commentAdapter = CommentAdapter(comments, currentUserId, { position -> showEditDialog(position) }, { position -> deleteComment(position) })
+        commentAdapter = CommentAdapter(comments, { position -> showEditDialog(position) }, { position -> deleteComment(position) })
         binding.recyclerComments.layoutManager = LinearLayoutManager(this)
         binding.recyclerComments.adapter = commentAdapter
+        binding.recyclerComments.isNestedScrollingEnabled = false
 
         binding.btnBack.setOnClickListener { finish() }
         binding.btnDownload.setOnClickListener {
@@ -250,12 +250,12 @@ class SourceDetailsActivity : AppCompatActivity() {
                         val c = arr.getJSONObject(i)
                         comments.add(CommentData(
                             c.getInt("id"),
-                            c.getInt("user_id"),
                             c.getString("username"),
                             c.getString("text"),
                             c.optString("user_pic"),
                             c.optInt("rating", 0),
-                            c.optBoolean("is_edited", false)
+                            c.optBoolean("is_edited", false),
+                            c.optBoolean("is_owner", false)
                         ))
                     }
                     commentAdapter.notifyDataSetChanged()
@@ -267,17 +267,16 @@ class SourceDetailsActivity : AppCompatActivity() {
 
 data class CommentData(
     val id: Int,
-    val userId: Int,
     val username: String,
     val text: String,
     val userPic: String,
     val rating: Int,
-    val isEdited: Boolean
+    val isEdited: Boolean,
+    val isOwner: Boolean
 )
 
 class CommentAdapter(
     private val items: List<CommentData>,
-    private val currentUserId: Int,
     private val onEditClick: (Int) -> Unit,
     private val onDeleteClick: (Int) -> Unit
 ) : RecyclerView.Adapter<CommentAdapter.ViewHolder>() {
@@ -305,11 +304,11 @@ class CommentAdapter(
             val picUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
             Glide.with(holder.b.root.context)
                 .load(picUrl)
-                .placeholder(R.drawable.ic_sun)
+                .placeholder(R.drawable/ic_sun)
                 .into(holder.b.imgCommentUserPic)
         }
 
-        if (item.userId == currentUserId) {
+        if (item.isOwner) {
             holder.b.btnEditComment.visibility = View.VISIBLE
             holder.b.btnDeleteComment.visibility = View.VISIBLE
             holder.b.btnEditComment.setOnClickListener { onEditClick(position) }

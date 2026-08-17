@@ -44,9 +44,10 @@ class PostDetailsActivity : AppCompatActivity() {
 
         postId = intent.getIntExtra("post_id", 0)
         
-        commentAdapter = CommentAdapter(comments, 0, { }, { })
+        commentAdapter = CommentAdapter(comments, { }, { })
         binding.recyclerComments.layoutManager = LinearLayoutManager(this)
         binding.recyclerComments.adapter = commentAdapter
+        binding.recyclerComments.isNestedScrollingEnabled = false
 
         binding.btnBack.setOnClickListener { 
             finish() 
@@ -103,12 +104,12 @@ class PostDetailsActivity : AppCompatActivity() {
                         val c = arr.getJSONObject(i)
                         comments.add(CommentData(
                             c.optInt("id", 0),
-                            c.optInt("user_id", 0),
                             c.getString("username"),
                             c.getString("text"),
                             c.optString("user_pic"),
                             0,
-                            c.optBoolean("is_edited", false)
+                            c.optBoolean("is_edited", false),
+                            false // isOwner برای توییت‌ها فعلا غیرفعال است
                         ))
                     }
                     commentAdapter.notifyDataSetChanged()
