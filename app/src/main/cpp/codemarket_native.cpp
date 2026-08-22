@@ -8,7 +8,8 @@
 extern "C"
 JNIEXPORT jstring JNICALL
 Java_ir_codemarket_app_NativeLib_getBaseUrl(JNIEnv *env, jobject thiz) {
-    return env->NewStringUTF("https://host.teohcho.xyz");
+    // دامنه جدید اینجا جایگزین شد
+    return env->NewStringUTF("https://unknown.isfpardaz.ir");
 }
 
 extern "C"
