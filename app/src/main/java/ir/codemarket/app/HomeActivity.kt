@@ -90,11 +90,17 @@ class HomeActivity : AppCompatActivity() {
             recreate()
         }
 
+        // عملکرد دکمه رفرش با انیمیشن
+        binding.btnRefresh.setOnClickListener {
+            it.animate().rotationBy(360f).setDuration(500).start()
+            binding.swipeRefresh.isRefreshing = true
+            loadFeedData()
+        }
+
         binding.btnAddPost.setOnClickListener {
             startActivity(Intent(this, CreatePostActivity::class.java))
         }
         
-        // قابلیت رفرش
         binding.swipeRefresh.setOnRefreshListener {
             loadFeedData()
         }
@@ -106,8 +112,11 @@ class HomeActivity : AppCompatActivity() {
                     binding.recyclerView.visibility = View.GONE
                     binding.uploadContainer.visibility = View.GONE
                     binding.profileContainer.visibility = View.GONE
+                    
                     binding.btnSearchIcon.visibility = View.GONE
                     binding.etSearch.visibility = View.GONE
+                    binding.spacer.visibility = View.VISIBLE
+                    binding.btnRefresh.visibility = View.VISIBLE
                     binding.btnAddPost.visibility = View.VISIBLE
                 }
                 R.id.nav_shop -> {
@@ -115,8 +124,10 @@ class HomeActivity : AppCompatActivity() {
                     binding.recyclerView.visibility = View.VISIBLE
                     binding.uploadContainer.visibility = View.GONE
                     binding.profileContainer.visibility = View.GONE
+                    
                     binding.btnSearchIcon.visibility = View.VISIBLE
-                    binding.etSearch.visibility = View.GONE
+                    binding.spacer.visibility = View.VISIBLE
+                    binding.btnRefresh.visibility = View.GONE
                     binding.btnAddPost.visibility = View.GONE
                 }
                 R.id.nav_profile -> {
@@ -124,8 +135,11 @@ class HomeActivity : AppCompatActivity() {
                     binding.recyclerView.visibility = View.GONE
                     binding.uploadContainer.visibility = View.GONE
                     binding.profileContainer.visibility = View.VISIBLE
+                    
                     binding.btnSearchIcon.visibility = View.GONE
                     binding.etSearch.visibility = View.GONE
+                    binding.spacer.visibility = View.VISIBLE
+                    binding.btnRefresh.visibility = View.GONE
                     binding.btnAddPost.visibility = View.GONE
                 }
                 R.id.nav_submit -> {
@@ -133,8 +147,11 @@ class HomeActivity : AppCompatActivity() {
                     binding.recyclerView.visibility = View.GONE
                     binding.uploadContainer.visibility = View.VISIBLE
                     binding.profileContainer.visibility = View.GONE
+                    
                     binding.btnSearchIcon.visibility = View.GONE
                     binding.etSearch.visibility = View.GONE
+                    binding.spacer.visibility = View.VISIBLE
+                    binding.btnRefresh.visibility = View.GONE
                     binding.btnAddPost.visibility = View.GONE
                 }
             }
@@ -156,7 +173,13 @@ class HomeActivity : AppCompatActivity() {
         binding.recyclerView.adapter = shopAdapter
 
         binding.btnSearchIcon.setOnClickListener {
-            binding.etSearch.visibility = if (binding.etSearch.visibility == View.GONE) View.VISIBLE else View.GONE
+            if (binding.etSearch.visibility == View.GONE) {
+                binding.etSearch.visibility = View.VISIBLE
+                binding.spacer.visibility = View.GONE
+            } else {
+                binding.etSearch.visibility = View.GONE
+                binding.spacer.visibility = View.VISIBLE
+            }
         }
 
         binding.etSearch.addTextChangedListener(object : TextWatcher {
@@ -405,6 +428,7 @@ class FeedAdapter(
         holder.b.tvCommentCount.text = item.commentCount.toString()
         holder.b.tvViewsCount.text = item.views.toString()
         
+        // تنظیم زمان باگ‌گیری شده
         holder.b.tvPostDate.text = TimeUtils.getTimeAgo(item.createdAt)
 
         val baseUrl = NativeLib.getBaseUrl()
@@ -415,6 +439,8 @@ class FeedAdapter(
                 .load(picUrl)
                 .placeholder(R.drawable.ic_sun)
                 .into(holder.b.imgUserPic)
+        } else {
+            holder.b.imgUserPic.setImageResource(R.drawable.ic_sun)
         }
         
         if (item.media.isNotEmpty() && item.mediaType == "image") {
@@ -431,8 +457,8 @@ class FeedAdapter(
             holder.b.imgLike.setColorFilter(ContextCompat.getColor(holder.b.root.context, R.color.purple))
             holder.b.tvLikeCount.setTextColor(ContextCompat.getColor(holder.b.root.context, R.color.purple))
         } else {
-            holder.b.imgLike.setColorFilter(Color.parseColor("#80FFFFFF"))
-            holder.b.tvLikeCount.setTextColor(Color.parseColor("#80FFFFFF"))
+            holder.b.imgLike.setColorFilter(Color.parseColor("#B3FFFFFF"))
+            holder.b.tvLikeCount.setTextColor(Color.parseColor("#B3FFFFFF"))
         }
 
         holder.b.btnLike.setOnClickListener { onLikeClick(item.id, position) }

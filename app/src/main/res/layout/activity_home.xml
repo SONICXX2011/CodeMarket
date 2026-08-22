@@ -21,7 +21,8 @@
             android:layout_height="32dp"
             android:src="@android:drawable/ic_menu_search"
             app:tint="@android:color/white"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless" />
 
         <EditText
             android:id="@+id/etSearch"
@@ -37,6 +38,22 @@
             android:visibility="gone"
             android:maxLines="1"
             android:inputType="text" />
+            
+        <View
+            android:id="@+id/spacer"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- دکمه رفرش -->
+        <ImageView
+            android:id="@+id/btnRefresh"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_popup_sync"
+            app:tint="@android:color/white"
+            android:layout_marginEnd="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless" />
 
         <ImageView
             android:id="@+id/btnThemeToggle"
@@ -44,10 +61,9 @@
             android:layout_height="32dp"
             android:src="@drawable/ic_sun"
             app:tint="#FFD600"
-            android:layout_marginStart="8dp" />
+            android:background="?attr/selectableItemBackgroundBorderless" />
     </LinearLayout>
 
-    <!-- بخش خانه (توییتر) با قابلیت رفرش -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
         android:layout_width="0dp"
@@ -66,7 +82,8 @@
                 android:id="@+id/recyclerFeed"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="8dp" />
+                android:clipToPadding="false"
+                android:paddingBottom="80dp" />
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/btnAddPost"
@@ -80,7 +97,6 @@
         </FrameLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <!-- بخش فروشگاه -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="0dp"
@@ -92,7 +108,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- بخش آپلود سورس -->
     <ScrollView
         android:id="@+id/uploadContainer"
         android:layout_width="0dp"
@@ -179,7 +194,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- بخش پروفایل -->
     <LinearLayout
         android:id="@+id/profileContainer"
         android:layout_width="0dp"
