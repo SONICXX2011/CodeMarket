@@ -2,6 +2,7 @@
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardComment"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginVertical="8dp"
@@ -14,6 +15,17 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tvReplyInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="در پاسخ به فلانی"
+            android:textColor="#5288C1"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            android:visibility="gone"
+            android:layout_marginBottom="8dp"/>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -35,14 +47,22 @@
                 android:orientation="vertical"
                 android:layout_marginStart="12dp">
 
-                <TextView
-                    android:id="@+id/tvCommentUsername"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="کاربر"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView
+                        android:id="@+id/tvCommentUsername"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="کاربر"
+                        android:textColor="?android:attr/textColorPrimary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <ImageView
+                        android:id="@+id/imgBadge"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_marginStart="4dp"
+                        android:visibility="gone" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvCommentDate"
@@ -67,7 +87,15 @@
                 android:paddingVertical="4dp"
                 android:layout_marginEnd="8dp"/>
 
-            <!-- دکمه سه نقطه برای حذف/ویرایش -->
+            <ImageView
+                android:id="@+id/btnReply"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_revert"
+                app:tint="?android:attr/textColorSecondary"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:layout_marginEnd="8dp" />
+
             <ImageView
                 android:id="@+id/btnCommentOptions"
                 android:layout_width="24dp"
@@ -87,6 +115,5 @@
             android:textColor="?android:attr/textColorPrimary"
             android:textSize="14sp"
             android:lineSpacingExtra="4dp" />
-
     </LinearLayout>
 </androidx.cardview.widget.CardView>

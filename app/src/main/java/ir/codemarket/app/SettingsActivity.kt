@@ -2,10 +2,16 @@ package ir.codemarket.app
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import ir.codemarket.app.databinding.ActivitySettingsBinding
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -36,26 +42,56 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.seekBarTextSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val newSize = 12f + progress
-                binding.tvTextSizePreview.textSize = newSize
+                binding.tvTextSizePreview.textSize = 12f + progress
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
+        loadVipSettings()
+
         binding.btnSaveSettings.setOnClickListener {
             val isDark = binding.rbDark.isChecked
             sessionManager.saveThemeMode(isDark)
-            
-            val finalSize = 12f + binding.seekBarTextSize.progress
-            sessionManager.saveTextSize(finalSize)
+            sessionManager.saveTextSize(12f + binding.seekBarTextSize.progress)
 
-            Toast.makeText(this, "تنظیمات ذخیره شد", Toast.LENGTH_SHORT).show()
-            
-            // ری‌استارت اپ برای اعمال کامل تم
-            val intent = Intent(this, HomeActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            startActivity(intent)
+            if (binding.layoutVipSettings.visibility == View.VISIBLE) {
+                val customBg = binding.etCustomBg.text.toString()
+                saveVipSettings(customBg)
+            } else {
+                restartApp()
+            }
         }
+    }
+
+    private fun loadVipSettings() {
+        CoroutineScope(Dispatchers.Main).launch {
+            val token = sessionManager.fetchAuthToken() ?: return@launch
+            val (res, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/profile", token) }
+            if (res != null) {
+                val json = JSONObject(res)
+                if (json.getBoolean("success") && json.optBoolean("is_vip", false)) {
+                    binding.layoutVipSettings.visibility = View.VISIBLE
+                    binding.etCustomBg.setText(json.optString("custom_bg", ""))
+                }
+            }
+        }
+    }
+
+    private fun saveVipSettings(bg: String) {
+        CoroutineScope(Dispatchers.Main).launch {
+            val token = sessionManager.fetchAuthToken() ?: return@launch
+            val payload = JSONObject().put("custom_bg", bg).toString()
+            withContext(Dispatchers.IO) { ApiClient.postRequest("/api/profile/update", payload, token) }
+            restartApp()
+        }
+    }
+
+    private fun restartApp() {
+        Toast.makeText(this, "تنظیمات ذخیره شد", Toast.LENGTH_SHORT).show()
+        val intent = Intent(this, HomeActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 }

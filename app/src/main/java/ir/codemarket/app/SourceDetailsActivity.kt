@@ -2,6 +2,7 @@ package ir.codemarket.app
 
 import android.app.DownloadManager
 import android.content.Context
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -9,7 +10,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.PopupMenu
+import android.widget.TextView
+import androidx.appcompat.widget.PopupMenu
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -37,7 +39,6 @@ class SourceDetailsActivity : AppCompatActivity() {
     private var progressJob: Job? = null
 
     private var currentUserId = -1
-
     private val commentsList = mutableListOf<CommentItem>()
     private lateinit var commentsAdapter: CommentsAdapter
 
@@ -47,21 +48,14 @@ class SourceDetailsActivity : AppCompatActivity() {
         sessionManager = SessionManager(this)
         markwon = Markwon.create(this)
 
-        // تنظیم داینامیک تم و بک‌گراند اصلی
-        if (sessionManager.isDarkMode()) {
-            setTheme(R.style.Theme_CodeMarket_Dark)
-        } else {
-            setTheme(R.style.Theme_CodeMarket_Light)
-        }
+        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
+        else setTheme(R.style.Theme_CodeMarket_Light)
 
         binding = ActivitySourceDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if (sessionManager.isDarkMode()) {
-            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
-        } else {
-            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
-        }
+        if (sessionManager.isDarkMode()) binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
+        else binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
 
         sourceId = intent.getIntExtra("source_id", -1)
         if (sourceId == -1) { finish(); return }
@@ -86,7 +80,7 @@ class SourceDetailsActivity : AppCompatActivity() {
             binding.progressDownload.progress = 0
         }
 
-        binding.btnAddComment.setOnClickListener { showAddCommentDialog() }
+        binding.btnAddComment.setOnClickListener { showAddCommentDialog(null) }
 
         extractUserId()
         setupCommentsRecyclerView()
@@ -105,10 +99,13 @@ class SourceDetailsActivity : AppCompatActivity() {
     }
 
     private fun setupCommentsRecyclerView() {
-        commentsAdapter = CommentsAdapter(commentsList, markwon, sessionManager.getTextSize(), currentUserId) { view, comment, pos ->
-            showCommentOptions(view, comment, pos)
+        commentsAdapter = CommentsAdapter(commentsList, markwon, sessionManager.getTextSize(), currentUserId,
+            onOptionsClick = { view, comment, pos -> showCommentOptions(view, comment, pos) },
+            onReplyClick = { comment -> showAddCommentDialog(comment) }
+        )
+        binding.recyclerComments.layoutManager = object : LinearLayoutManager(this) {
+            override fun canScrollVertically(): Boolean = false
         }
-        binding.recyclerComments.layoutManager = LinearLayoutManager(this)
         binding.recyclerComments.adapter = commentsAdapter
     }
 
@@ -154,7 +151,12 @@ class SourceDetailsActivity : AppCompatActivity() {
                     c.optString("user_pic", ""),
                     c.optString("text", ""),
                     c.optInt("rating", 0),
-                    c.optString("date", "")
+                    c.optString("date", ""),
+                    c.optBoolean("is_vip", false),
+                    c.optString("badge_url", ""),
+                    c.optString("custom_bg", ""),
+                    c.optInt("reply_to_id", -1),
+                    c.optString("reply_to_username", "")
                 )
             )
         }
@@ -179,52 +181,57 @@ class SourceDetailsActivity : AppCompatActivity() {
                 rating >= 9 -> r5++; rating >= 7 -> r4++; rating >= 5 -> r3++; rating >= 3 -> r2++; else -> r1++
             }
         }
-        
         val avg = sum / total
         binding.tvAverageRating.text = String.format(java.util.Locale.US, "%.1f", avg)
-        binding.ratingBarStars.rating = (avg / 2).toFloat() // تبدیل بازه ۱۰ به ۵ ستاره
-
-        binding.pbRating5.progress = (r5 * 100) / total
-        binding.pbRating4.progress = (r4 * 100) / total
-        binding.pbRating3.progress = (r3 * 100) / total
-        binding.pbRating2.progress = (r2 * 100) / total
-        binding.pbRating1.progress = (r1 * 100) / total
+        binding.ratingBarStars.rating = (avg / 2).toFloat()
+        binding.pbRating5.progress = (r5 * 100) / total; binding.pbRating4.progress = (r4 * 100) / total; binding.pbRating3.progress = (r3 * 100) / total; binding.pbRating2.progress = (r2 * 100) / total; binding.pbRating1.progress = (r1 * 100) / total
     }
 
-    private fun showAddCommentDialog() {
+    private fun showAddCommentDialog(replyTo: CommentItem?) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_comment, null)
         val etRating = dialogView.findViewById<EditText>(R.id.etRating)
         val etCommentText = dialogView.findViewById<EditText>(R.id.etCommentText)
         val btnSubmit = dialogView.findViewById<MaterialButton>(R.id.btnSubmitDialog)
+        val tvHeader = dialogView.findViewById<TextView>(R.id.tvReplyHeader)
 
         MarkdownUtils.applyMarkdownShortcuts(etCommentText)
 
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .create()
-            
+        if (replyTo != null) {
+            tvHeader.text = "پاسخ به ${replyTo.username}"
+            etRating.visibility = View.GONE
+        }
+
+        val dialog = AlertDialog.Builder(this).setView(dialogView).create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         btnSubmit.setOnClickListener {
-            val rating = etRating.text.toString().toIntOrNull() ?: 0
+            val rating = if (replyTo != null) 0 else (etRating.text.toString().toIntOrNull() ?: 0)
             val text = etCommentText.text.toString()
 
-            if (text.isNotEmpty() && rating in 1..10) {
+            if (text.isNotEmpty() && (replyTo != null || rating in 1..10)) {
                 dialog.dismiss()
-                sendComment(text, rating)
+                sendComment(text, rating, replyTo?.id)
             } else {
-                Toast.makeText(this, "امتیاز بین 1 تا 10 و متن الزامی است", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "امتیاز و متن الزامی است", Toast.LENGTH_SHORT).show()
             }
         }
         dialog.show()
     }
 
-    private fun sendComment(text: String, rating: Int) {
+    private fun sendComment(text: String, rating: Int, replyToId: Int?) {
         val token = sessionManager.fetchAuthToken() ?: ""
-        val payload = JSONObject().apply { put("text", text); put("rating", rating) }.toString()
+        val payload = JSONObject().apply {
+            put("text", text)
+            put("rating", rating)
+            if (replyToId != null) put("reply_to_id", replyToId)
+        }.toString()
 
         CoroutineScope(Dispatchers.Main).launch {
-            val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/source/$sourceId/comment", payload, token) }
+            val (res, code) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/source/$sourceId/comment", payload, token) }
+            if (code == 429) {
+                Toast.makeText(this@SourceDetailsActivity, "بیش از حد مجاز! یک دقیقه صبر کنید.", Toast.LENGTH_LONG).show()
+                return@launch
+            }
             if (res != null) {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
@@ -287,9 +294,7 @@ class SourceDetailsActivity : AppCompatActivity() {
                     val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/source/$sourceId/comment/${comment.id}/edit", payload, token) }
                     if (res != null && JSONObject(res).getBoolean("success")) loadSourceDetails()
                 }
-            } else {
-                Toast.makeText(this, "مشخصات نامعتبر", Toast.LENGTH_SHORT).show()
-            }
+            } else { Toast.makeText(this, "مشخصات نامعتبر", Toast.LENGTH_SHORT).show() }
         }
         dialog.show()
     }
@@ -343,28 +348,20 @@ class SourceDetailsActivity : AppCompatActivity() {
                     delay(500)
                 }
             }
-        } catch (e: Exception) {
-            Toast.makeText(this, "خطا در شروع دانلود", Toast.LENGTH_SHORT).show()
-        }
+        } catch (e: Exception) { Toast.makeText(this, "خطا در شروع دانلود", Toast.LENGTH_SHORT).show() }
     }
 }
 
 data class CommentItem(
-    val id: Int,
-    val userId: Int,
-    val username: String,
-    val userPic: String,
-    val text: String,
-    val rating: Int,
-    val date: String
+    val id: Int, val userId: Int, val username: String, val userPic: String, val text: String,
+    val rating: Int, val date: String, val isVip: Boolean, val badgeUrl: String, val customBg: String,
+    val replyToId: Int, val replyToUsername: String
 )
 
 class CommentsAdapter(
-    private val items: List<CommentItem>,
-    private val markwon: Markwon,
-    private val size: Float,
-    private val currentUserId: Int,
-    private val onOptionsClick: (View, CommentItem, Int) -> Unit
+    private val items: List<CommentItem>, private val markwon: Markwon, private val size: Float, private val currentUserId: Int,
+    private val onOptionsClick: (View, CommentItem, Int) -> Unit,
+    private val onReplyClick: (CommentItem) -> Unit
 ) : RecyclerView.Adapter<CommentsAdapter.ViewHolder>() {
 
     class ViewHolder(val b: ItemCommentBinding) : RecyclerView.ViewHolder(b.root)
@@ -374,27 +371,43 @@ class CommentsAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
         holder.b.tvCommentUsername.text = item.username
-        holder.b.tvCommentRating.text = item.rating.toString()
+        if (item.rating > 0) {
+            holder.b.tvCommentRating.visibility = View.VISIBLE
+            holder.b.tvCommentRating.text = item.rating.toString()
+        } else holder.b.tvCommentRating.visibility = View.GONE
+
         holder.b.tvCommentDate.text = TimeUtils.getTimeAgo(item.date)
         
         holder.b.tvCommentText.textSize = size
         markwon.setMarkdown(holder.b.tvCommentText, item.text)
 
+        if (item.replyToId != -1 && item.replyToUsername.isNotEmpty()) {
+            holder.b.tvReplyInfo.visibility = View.VISIBLE
+            holder.b.tvReplyInfo.text = "در پاسخ به ${item.replyToUsername}"
+        } else {
+            holder.b.tvReplyInfo.visibility = View.GONE
+        }
+
         if (item.userId == currentUserId && currentUserId != -1) {
             holder.b.btnCommentOptions.visibility = View.VISIBLE
             holder.b.btnCommentOptions.setOnClickListener { onOptionsClick(it, item, position) }
-        } else {
-            holder.b.btnCommentOptions.visibility = View.GONE
-        }
+        } else holder.b.btnCommentOptions.visibility = View.GONE
+        
+        holder.b.btnReply.setOnClickListener { onReplyClick(item) }
 
         val baseUrl = NativeLib.getBaseUrl()
         if (item.userPic.isNotEmpty()) {
-            val fullUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
-            Glide.with(holder.b.root.context).load(fullUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgCommentUser)
-        } else {
-            holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
+            Glide.with(holder.b.root.context).load(if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic).into(holder.b.imgCommentUser)
+        } else holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
+
+        if (item.isVip && item.badgeUrl.isNotEmpty()) {
+            holder.b.imgBadge.visibility = View.VISIBLE
+            Glide.with(holder.b.root.context).load(if (item.badgeUrl.startsWith("http")) item.badgeUrl else baseUrl + item.badgeUrl).into(holder.b.imgBadge)
+        } else holder.b.imgBadge.visibility = View.GONE
+
+        if (item.isVip && item.customBg.isNotEmpty()) {
+            try { holder.b.cardComment.setCardBackgroundColor(Color.parseColor(item.customBg)) } catch(e: Exception) {}
         }
     }
-
     override fun getItemCount(): Int = items.size
 }
