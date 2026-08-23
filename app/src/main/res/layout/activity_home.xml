@@ -63,7 +63,6 @@
             android:background="?attr/selectableItemBackgroundBorderless" />
     </LinearLayout>
 
-    <!-- خانه -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
         android:layout_width="0dp"
@@ -97,7 +96,6 @@
         </FrameLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <!-- فروشگاه -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="0dp"
@@ -109,7 +107,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- آپلود سورس (فیلد توضیحات بزرگتر و حذف لینک گیت‌هاب) -->
+    <!-- بخش آپلود با TextInputLayout های گرافیکی -->
     <ScrollView
         android:id="@+id/uploadContainer"
         android:layout_width="0dp"
@@ -152,31 +150,52 @@
                 android:text="انتخاب فایل ZIP سورس"
                 app:cornerRadius="16dp"
                 android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
                 android:backgroundTint="#22FFFFFF"
                 app:strokeColor="#55FFFFFF"
                 app:strokeWidth="1dp" />
 
-            <EditText
-                android:id="@+id/etSourceName"
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="نام سورس"
-                android:textColorHint="#80FFFFFF"
-                android:textColor="@android:color/white"
-                android:backgroundTint="@color/purple"
-                android:layout_marginTop="16dp" />
+                app:hintTextColor="#5288C1"
+                app:boxStrokeColor="#5288C1"
+                app:boxBackgroundColor="#1AFFFFFF"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp">
 
-            <EditText
-                android:id="@+id/etSourceDesc"
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etSourceName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@android:color/white" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minLines="5"
-                android:gravity="top|start"
-                android:hint="توضیحات کامل (پشتیبانی از مارک‌داون)..."
-                android:textColorHint="#80FFFFFF"
-                android:textColor="@android:color/white"
-                android:backgroundTint="@color/purple"
-                android:layout_marginTop="8dp" />
+                android:layout_marginTop="16dp"
+                android:hint="توضیحات کامل (پشتیبانی از مارک‌داون)"
+                app:hintTextColor="#5288C1"
+                app:boxStrokeColor="#5288C1"
+                app:boxBackgroundColor="#1AFFFFFF"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etSourceDesc"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minLines="5"
+                    android:gravity="top|start"
+                    android:textColor="@android:color/white"
+                    android:inputType="textMultiLine" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnUpload"
@@ -184,11 +203,12 @@
                 android:layout_height="55dp"
                 android:text="ارسال برای تایید ادمین"
                 app:cornerRadius="16dp"
+                app:backgroundTint="#5288C1"
                 android:layout_marginTop="24dp" />
         </LinearLayout>
     </ScrollView>
 
-    <!-- پروفایل تلگرامی -->
+    <!-- بخش پروفایل تلگرامی -->
     <ScrollView
         android:id="@+id/profileContainer"
         android:layout_width="0dp"
@@ -203,7 +223,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- هدر گرادیانت -->
             <View
                 android:id="@+id/profileHeader"
                 android:layout_width="match_parent"
@@ -251,14 +270,24 @@
                 android:padding="24dp"
                 app:layout_constraintTop_toBottomOf="@id/tvEmailProfile">
 
-                <EditText
-                    android:id="@+id/etFullName"
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="تغییر نام و نام خانوادگی"
-                    android:textColorHint="#80FFFFFF"
-                    android:textColor="@android:color/white"
-                    android:backgroundTint="@color/purple" />
+                    app:hintTextColor="@color/purple"
+                    app:boxStrokeColor="@color/purple"
+                    app:boxBackgroundColor="#1AFFFFFF"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etFullName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@android:color/white" />
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnChangePic"
@@ -268,6 +297,16 @@
                     android:backgroundTint="#22FFFFFF"
                     app:strokeColor="#55FFFFFF"
                     app:strokeWidth="1dp"
+                    app:cornerRadius="16dp"
+                    android:layout_marginTop="16dp" />
+
+                <!-- اضافه شدن دکمه شخصی‌سازی و تنظیمات -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSettings"
+                    android:layout_width="match_parent"
+                    android:layout_height="55dp"
+                    android:text="شخصی‌سازی برنامه"
+                    app:backgroundTint="#5288C1"
                     app:cornerRadius="16dp"
                     android:layout_marginTop="16dp" />
 

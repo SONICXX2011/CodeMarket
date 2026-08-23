@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F0F0F"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <ImageView
+        android:id="@+id/btnBack"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_arrow_back"
+        app:tint="@android:color/white"
+        android:background="?attr/selectableItemBackgroundBorderless" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="شخصی‌سازی برنامه"
+        android:textColor="@android:color/white"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="32dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="تم برنامه"
+        android:textColor="#CCFFFFFF"
+        android:textSize="16sp"
+        android:layout_marginBottom="12dp" />
+
+    <RadioGroup
+        android:id="@+id/rgTheme"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_glass_input"
+        android:padding="8dp">
+
+        <RadioButton
+            android:id="@+id/rbLight"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="روشن"
+            android:textColor="@android:color/white"
+            android:buttonTint="@color/purple" />
+
+        <RadioButton
+            android:id="@+id/rbDark"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="تاریک"
+            android:textColor="@android:color/white"
+            android:buttonTint="@color/purple" />
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="اندازه متن پست‌ها"
+        android:textColor="#CCFFFFFF"
+        android:textSize="16sp"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- اسلایدر برای تغییر اندازه متن -->
+    <SeekBar
+        android:id="@+id/seekBarTextSize"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="14"
+        android:progress="0"
+        android:progressTint="@color/purple"
+        android:thumbTint="@color/purple" />
+
+    <TextView
+        android:id="@+id/tvTextSizePreview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="نمونه اندازه متن"
+        android:textColor="@android:color/white"
+        android:layout_marginTop="16dp"
+        android:gravity="center" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSaveSettings"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_marginTop="48dp"
+        android:text="ذخیره تنظیمات"
+        app:cornerRadius="16dp"
+        app:backgroundTint="@color/purple" />
+
+</LinearLayout>
