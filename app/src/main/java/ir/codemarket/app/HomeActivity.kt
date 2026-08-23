@@ -44,12 +44,10 @@ class HomeActivity : AppCompatActivity() {
     private val feedItems = mutableListOf<FeedItem>()
     private lateinit var feedAdapter: FeedAdapter
     
-    // متغیرهای صفحه‌بندی
     private var currentPage = 1
     private var isLoadingFeed = false
     private var hasMoreFeed = true
 
-    // آیدی کاربر برای اعتبارسنجی مالکیت پست و قابلیت ویرایش/حذف
     private var currentUserId = -1
 
     private var selectedZipUri: Uri? = null
@@ -264,7 +262,6 @@ class HomeActivity : AppCompatActivity() {
                         
                         val existingIndex = feedItems.indexOfFirst { it.id == newItem.id }
                         if (existingIndex != -1) {
-                            // اگر پست از قبل بود فقط آپدیتش کن تا اطلاعاتش رفرش بشه
                             feedItems[existingIndex] = newItem
                         } else {
                             feedItems.add(newItem)
@@ -311,6 +308,9 @@ class HomeActivity : AppCompatActivity() {
             setPadding(40, 40, 40, 40)
             hint = "ویرایش پست (پشتیبانی از مارک‌داون)..."
         }
+        
+        MarkdownUtils.applyMarkdownShortcuts(editText)
+
         AlertDialog.Builder(this)
             .setTitle("ویرایش پست")
             .setView(editText)
@@ -335,6 +335,8 @@ class HomeActivity : AppCompatActivity() {
         binding.btnSelectLogo.setOnClickListener { pickLogo.launch("image/*") }
         binding.btnSelectZip.setOnClickListener { pickZip.launch("application/zip") }
         
+        MarkdownUtils.applyMarkdownShortcuts(binding.etSourceDesc)
+        
         binding.btnUpload.setOnClickListener {
             if (selectedZipUri != null && selectedLogoUri != null) {
                 val name = binding.etSourceName.text.toString()
@@ -348,8 +350,12 @@ class HomeActivity : AppCompatActivity() {
                         val (res, _) = withContext(Dispatchers.IO) { ApiClient.uploadFile("/api/upload", token, zipFile, logoFile, fields) }
                         if (res != null && JSONObject(res).getBoolean("success")) {
                             Toast.makeText(this@HomeActivity, "سورس برای تایید ادمین ارسال شد", Toast.LENGTH_SHORT).show()
-                            binding.etSourceName.text.clear()
-                            binding.etSourceDesc.text.clear()
+                            binding.etSourceName.setText("")
+                            binding.etSourceDesc.setText("")
+                            selectedZipUri = null
+                            selectedLogoUri = null
+                            binding.btnSelectZip.text = "انتخاب فایل ZIP سورس"
+                            binding.btnSelectLogo.text = "انتخاب لوگو سورس"
                         } else {
                             Toast.makeText(this@HomeActivity, "خطا در ارسال", Toast.LENGTH_SHORT).show()
                         }
@@ -365,6 +371,11 @@ class HomeActivity : AppCompatActivity() {
 
     private fun setupProfileView() {
         binding.btnChangePic.setOnClickListener { pickProfilePic.launch("image/*") }
+        
+        binding.btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
         binding.btnUpdateProfile.setOnClickListener {
             val fullName = binding.etFullName.text.toString()
             CoroutineScope(Dispatchers.Main).launch {
@@ -489,7 +500,6 @@ class FeedAdapter(
         val item = items[position]
         holder.b.tvUsername.text = item.username
         
-        // رندر مارک‌داون
         markwon.setMarkdown(holder.b.tvPostText, item.text)
         
         holder.b.tvLikeCount.text = item.likeCount.toString()
@@ -499,7 +509,6 @@ class FeedAdapter(
         val editStatus = if (item.isEdited) " (ویرایش شده)" else ""
         holder.b.tvPostDate.text = TimeUtils.getTimeAgo(item.createdAt) + editStatus
 
-        // آیکون ۳ نقطه فقط برای صاحب پست
         if (item.userId == currentUserId && currentUserId != -1) {
             holder.b.tvUsername.setCompoundDrawablesWithIntrinsicBounds(0, 0, android.R.drawable.ic_menu_more, 0)
             holder.b.tvUsername.setOnClickListener { onOptionsClick(it, item, position) }

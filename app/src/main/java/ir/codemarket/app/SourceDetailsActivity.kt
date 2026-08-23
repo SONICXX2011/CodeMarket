@@ -44,14 +44,20 @@ class SourceDetailsActivity : AppCompatActivity() {
         sessionManager = SessionManager(this)
         markwon = Markwon.create(this)
 
-        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
-        else setTheme(R.style.Theme_CodeMarket_Light)
+        if (sessionManager.isDarkMode()) {
+            setTheme(R.style.Theme_CodeMarket_Dark)
+        } else {
+            setTheme(R.style.Theme_CodeMarket_Light)
+        }
 
         binding = ActivitySourceDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         sourceId = intent.getIntExtra("source_id", -1)
-        if (sourceId == -1) { finish(); return }
+        if (sourceId == -1) {
+            finish()
+            return
+        }
 
         binding.btnBack.setOnClickListener { finish() }
 
@@ -73,7 +79,9 @@ class SourceDetailsActivity : AppCompatActivity() {
             binding.progressDownload.progress = 0
         }
 
-        binding.btnAddComment.setOnClickListener { showAddCommentDialog() }
+        binding.btnAddComment.setOnClickListener {
+            showAddCommentDialog()
+        }
 
         setupCommentsRecyclerView()
         loadSourceDetails()
@@ -101,7 +109,10 @@ class SourceDetailsActivity : AppCompatActivity() {
                     val logoUrl = source.optString("logo", "")
                     if (logoUrl.isNotEmpty()) {
                         val fullLogoUrl = if (logoUrl.startsWith("http")) logoUrl else NativeLib.getBaseUrl() + logoUrl
-                        Glide.with(this@SourceDetailsActivity).load(fullLogoUrl).placeholder(R.drawable.ic_sun).into(binding.imgDetailsLogo)
+                        Glide.with(this@SourceDetailsActivity)
+                            .load(fullLogoUrl)
+                            .placeholder(R.drawable.ic_sun)
+                            .into(binding.imgDetailsLogo)
                     }
 
                     val rawZipUrl = source.optString("zip_file", "")
@@ -119,7 +130,16 @@ class SourceDetailsActivity : AppCompatActivity() {
         commentsList.clear()
         for (i in 0 until array.length()) {
             val c = array.getJSONObject(i)
-            commentsList.add(CommentItem(c.optInt("id", 0), c.optString("username", "کاربر"), c.optString("user_pic", ""), c.optString("text", ""), c.optInt("rating", 0), c.optString("date", "")))
+            commentsList.add(
+                CommentItem(
+                    c.optInt("id", 0),
+                    c.optString("username", "کاربر"),
+                    c.optString("user_pic", ""),
+                    c.optString("text", ""),
+                    c.optInt("rating", 0),
+                    c.optString("date", "")
+                )
+            )
         }
         commentsAdapter.notifyDataSetChanged()
     }
@@ -128,19 +148,33 @@ class SourceDetailsActivity : AppCompatActivity() {
         val total = comments.length()
         if (total == 0) {
             binding.tvAverageRating.text = "0.0"
-            binding.pbRating5.progress = 0; binding.pbRating4.progress = 0; binding.pbRating3.progress = 0; binding.pbRating2.progress = 0; binding.pbRating1.progress = 0
+            binding.pbRating5.progress = 0
+            binding.pbRating4.progress = 0
+            binding.pbRating3.progress = 0
+            binding.pbRating2.progress = 0
+            binding.pbRating1.progress = 0
             return
         }
 
-        var sum = 0.0; var r5 = 0; var r4 = 0; var r3 = 0; var r2 = 0; var r1 = 0
+        var sum = 0.0
+        var r5 = 0; var r4 = 0; var r3 = 0; var r2 = 0; var r1 = 0
+
         for (i in 0 until total) {
             val rating = comments.getJSONObject(i).optDouble("rating", 0.0)
             sum += rating
+
             when {
-                rating >= 9 -> r5++; rating >= 7 -> r4++; rating >= 5 -> r3++; rating >= 3 -> r2++; else -> r1++
+                rating >= 9 -> r5++
+                rating >= 7 -> r4++
+                rating >= 5 -> r3++
+                rating >= 3 -> r2++
+                else -> r1++
             }
         }
-        binding.tvAverageRating.text = String.format(java.util.Locale.US, "%.1f", sum / total)
+
+        val avg = sum / total
+        binding.tvAverageRating.text = String.format(java.util.Locale.US, "%.1f", avg)
+
         binding.pbRating5.progress = (r5 * 100) / total
         binding.pbRating4.progress = (r4 * 100) / total
         binding.pbRating3.progress = (r3 * 100) / total
@@ -156,7 +190,8 @@ class SourceDetailsActivity : AppCompatActivity() {
 
         MarkdownUtils.applyMarkdownShortcuts(etCommentText)
 
-        val dialog = AlertDialog.Builder(this, android.R.style.Theme_Device_Default_Dialog_NoActionBar_MinWidth)
+        // اینجا ارور دیالوگ کاملاً برطرف شده و از استایل استاندارد استفاده میشه
+        val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .create()
             
@@ -178,7 +213,10 @@ class SourceDetailsActivity : AppCompatActivity() {
 
     private fun sendComment(text: String, rating: Int) {
         val token = sessionManager.fetchAuthToken() ?: ""
-        val payload = JSONObject().apply { put("text", text); put("rating", rating) }.toString()
+        val payload = JSONObject().apply {
+            put("text", text)
+            put("rating", rating)
+        }.toString()
 
         CoroutineScope(Dispatchers.Main).launch {
             val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/source/$sourceId/comment", payload, token) }
@@ -249,13 +287,30 @@ class SourceDetailsActivity : AppCompatActivity() {
     }
 }
 
-data class CommentItem(val id: Int, val username: String, val userPic: String, val text: String, val rating: Int, val date: String)
+data class CommentItem(
+    val id: Int,
+    val username: String,
+    val userPic: String,
+    val text: String,
+    val rating: Int,
+    val date: String
+)
 
-class CommentsAdapter(private val items: List<CommentItem>, private val markwon: Markwon, private val size: Float) : RecyclerView.Adapter<CommentsAdapter.ViewHolder>() {
+class CommentsAdapter(
+    private val items: List<CommentItem>,
+    private val markwon: Markwon,
+    private val size: Float
+) : RecyclerView.Adapter<CommentsAdapter.ViewHolder>() {
+
     class ViewHolder(val b: ItemCommentBinding) : RecyclerView.ViewHolder(b.root)
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemCommentBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        return ViewHolder(ItemCommentBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+    }
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
+        
         holder.b.tvCommentUsername.text = item.username
         holder.b.tvCommentRating.text = item.rating.toString()
         holder.b.tvCommentDate.text = TimeUtils.getTimeAgo(item.date)
@@ -263,10 +318,17 @@ class CommentsAdapter(private val items: List<CommentItem>, private val markwon:
         holder.b.tvCommentText.textSize = size
         markwon.setMarkdown(holder.b.tvCommentText, item.text)
 
+        val baseUrl = NativeLib.getBaseUrl()
         if (item.userPic.isNotEmpty()) {
-            val fullUrl = if (item.userPic.startsWith("http")) item.userPic else NativeLib.getBaseUrl() + item.userPic
-            Glide.with(holder.b.root.context).load(fullUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgCommentUser)
-        } else holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
+            val fullUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
+            Glide.with(holder.b.root.context)
+                .load(fullUrl)
+                .placeholder(R.drawable.ic_sun)
+                .into(holder.b.imgCommentUser)
+        } else {
+            holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
+        }
     }
+
     override fun getItemCount(): Int = items.size
 }
