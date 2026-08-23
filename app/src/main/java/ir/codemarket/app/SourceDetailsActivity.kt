@@ -81,7 +81,6 @@ class SourceDetailsActivity : AppCompatActivity() {
 
     private fun setupCommentsRecyclerView() {
         commentsAdapter = CommentsAdapter(commentsList, markwon, sessionManager.getTextSize())
-        // این بخش مشکل نشون دادن فقط یک کامنت رو کامل حل میکنه
         binding.recyclerComments.layoutManager = object : LinearLayoutManager(this) {
             override fun canScrollVertically(): Boolean = false
         }
@@ -122,7 +121,16 @@ class SourceDetailsActivity : AppCompatActivity() {
         commentsList.clear()
         for (i in 0 until array.length()) {
             val c = array.getJSONObject(i)
-            commentsList.add(CommentItem(c.optInt("id", 0), c.optString("username", "کاربر"), c.optString("user_pic", ""), c.optString("text", ""), c.optInt("rating", 0), c.optString("date", "")))
+            commentsList.add(
+                CommentItem(
+                    c.optInt("id", 0),
+                    c.optString("username", "کاربر"),
+                    c.optString("user_pic", ""),
+                    c.optString("text", ""),
+                    c.optInt("rating", 0),
+                    c.optString("date", "")
+                )
+            )
         }
         commentsAdapter.notifyDataSetChanged()
     }
@@ -252,9 +260,26 @@ class SourceDetailsActivity : AppCompatActivity() {
     }
 }
 
-class CommentsAdapter(private val items: List<CommentItem>, private val markwon: Markwon, private val size: Float) : RecyclerView.Adapter<CommentsAdapter.ViewHolder>() {
+// این دیتا کلاس همون چیزیه که جا مونده بود و باعث ارور شد!
+data class CommentItem(
+    val id: Int,
+    val username: String,
+    val userPic: String,
+    val text: String,
+    val rating: Int,
+    val date: String
+)
+
+class CommentsAdapter(
+    private val items: List<CommentItem>,
+    private val markwon: Markwon,
+    private val size: Float
+) : RecyclerView.Adapter<CommentsAdapter.ViewHolder>() {
+
     class ViewHolder(val b: ItemCommentBinding) : RecyclerView.ViewHolder(b.root)
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemCommentBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
         holder.b.tvCommentUsername.text = item.username
@@ -267,7 +292,10 @@ class CommentsAdapter(private val items: List<CommentItem>, private val markwon:
         if (item.userPic.isNotEmpty()) {
             val fullUrl = if (item.userPic.startsWith("http")) item.userPic else NativeLib.getBaseUrl() + item.userPic
             Glide.with(holder.b.root.context).load(fullUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgCommentUser)
-        } else holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
+        } else {
+            holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
+        }
     }
+
     override fun getItemCount(): Int = items.size
 }
