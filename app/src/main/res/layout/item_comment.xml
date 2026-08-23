@@ -4,8 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    app:cardBackgroundColor="#2217212B"
+    android:layout_marginVertical="8dp"
+    app:cardBackgroundColor="#1AFFFFFF"
     app:cardCornerRadius="16dp"
     app:cardElevation="0dp">
 
@@ -22,98 +22,60 @@
             android:gravity="center_vertical">
 
             <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/imgCommentUserPic"
+                android:id="@+id/imgCommentUser"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:src="@drawable/ic_sun"
-                app:civ_circle_background_color="#80FFFFFF"
-                android:layout_marginEnd="12dp" />
+                app:civ_circle_background_color="#33FFFFFF" />
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:layout_marginStart="12dp">
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/tvCommentUsername"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:text="کاربر"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/tvCommentUser"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="ali_dev"
-                        android:textColor="#5288C1"
-                        android:textStyle="bold"
-                        android:textSize="14sp" />
-
-                    <TextView
-                        android:id="@+id/tvEditedTag"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="(ویرایش شده)"
-                        android:textColor="#80FFFFFF"
-                        android:textSize="10sp"
-                        android:layout_marginStart="6dp"
-                        android:visibility="gone" />
-                </LinearLayout>
-
-                <LinearLayout
+                <TextView
+                    android:id="@+id/tvCommentDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="2dp">
-
-                    <ImageView
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:src="@drawable/ic_star"
-                        app:tint="#FFC107" />
-
-                    <TextView
-                        android:id="@+id/tvCommentRating"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="8/10"
-                        android:textColor="#FFC107"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginStart="4dp" />
-                </LinearLayout>
+                    android:text="همین الان"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="11sp"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
 
-            <ImageView
-                android:id="@+id/btnEditComment"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_edit"
-                app:tint="#80FFFFFF"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:layout_marginEnd="8dp"
-                android:visibility="gone" />
-
-            <ImageView
-                android:id="@+id/btnDeleteComment"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_delete"
-                app:tint="#FF5252"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:visibility="gone" />
+            <TextView
+                android:id="@+id/tvCommentRating"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFD600"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:text="10"
+                android:background="#22FFD600"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/tvCommentText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="این سورس بسیار عالی و کاربردی بود!"
-            android:textColor="#E0FFFFFF"
             android:layout_marginTop="12dp"
-            android:textSize="15sp" />
+            android:text="متن نظر..."
+            android:textColor="#E6FFFFFF"
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

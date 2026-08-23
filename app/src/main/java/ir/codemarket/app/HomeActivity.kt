@@ -49,7 +49,7 @@ class HomeActivity : AppCompatActivity() {
     private var isLoadingFeed = false
     private var hasMoreFeed = true
 
-    // اطلاعات کاربر لاگین شده برای بررسی مالکیت پست
+    // آیدی کاربر برای اعتبارسنجی مالکیت پست و قابلیت ویرایش/حذف
     private var currentUserId = -1
 
     private var selectedZipUri: Uri? = null
@@ -61,29 +61,38 @@ class HomeActivity : AppCompatActivity() {
             binding.btnSelectZip.text = "فایل ZIP انتخاب شد"
         }
     }
+
     private val pickLogo = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedLogoUri = it
             binding.btnSelectLogo.text = "لوگو انتخاب شد"
         }
     }
+
     private val pickProfilePic = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { uploadProfilePic(it) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
         sessionManager = SessionManager(this)
         markwon = Markwon.create(this)
 
-        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
-        else setTheme(R.style.Theme_CodeMarket_Light)
+        if (sessionManager.isDarkMode()) {
+            setTheme(R.style.Theme_CodeMarket_Dark)
+        } else {
+            setTheme(R.style.Theme_CodeMarket_Light)
+        }
 
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if (sessionManager.isDarkMode()) binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
-        else binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
+        if (sessionManager.isDarkMode()) {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
+        } else {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
+        }
 
         setupShopView()
         setupFeedView()
@@ -121,7 +130,7 @@ class HomeActivity : AppCompatActivity() {
             true
         }
 
-        loadProfile() // گرفتن آیدی کاربر لاگین شده
+        loadProfile()
         loadShopData()
         loadFeedData()
     }
@@ -150,9 +159,15 @@ class HomeActivity : AppCompatActivity() {
         binding.recyclerView.adapter = shopAdapter
 
         binding.btnSearchIcon.setOnClickListener {
-            binding.etSearch.visibility = if (binding.etSearch.visibility == View.GONE) View.VISIBLE else View.GONE
-            binding.spacer.visibility = if (binding.etSearch.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            if (binding.etSearch.visibility == View.GONE) {
+                binding.etSearch.visibility = View.VISIBLE
+                binding.spacer.visibility = View.GONE
+            } else {
+                binding.etSearch.visibility = View.GONE
+                binding.spacer.visibility = View.VISIBLE
+            }
         }
+
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) { filterShop(s.toString()) }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -162,8 +177,9 @@ class HomeActivity : AppCompatActivity() {
 
     private fun filterShop(query: String) {
         filteredItems.clear()
-        if (query.isEmpty()) filteredItems.addAll(shopItems)
-        else {
+        if (query.isEmpty()) {
+            filteredItems.addAll(shopItems)
+        } else {
             shopItems.forEach {
                 if (it.name.contains(query, ignoreCase = true) || it.desc.contains(query, ignoreCase = true)) {
                     filteredItems.add(it)
@@ -232,7 +248,9 @@ class HomeActivity : AppCompatActivity() {
                     hasMoreFeed = json.getBoolean("has_more")
                     val arr = json.getJSONArray("posts")
                     
-                    if (currentPage == 1) feedItems.clear()
+                    if (currentPage == 1) {
+                        feedItems.clear()
+                    }
                     
                     for (i in 0 until arr.length()) {
                         val p = arr.getJSONObject(i)
@@ -243,8 +261,14 @@ class HomeActivity : AppCompatActivity() {
                             p.optInt("like_count"), p.optInt("comment_count"),
                             p.optInt("views"), p.optString("created_at"), p.optBoolean("is_edited")
                         )
-                        // جلوگیری از تکرار در سینک
-                        if (feedItems.none { it.id == newItem.id }) feedItems.add(newItem)
+                        
+                        val existingIndex = feedItems.indexOfFirst { it.id == newItem.id }
+                        if (existingIndex != -1) {
+                            // اگر پست از قبل بود فقط آپدیتش کن تا اطلاعاتش رفرش بشه
+                            feedItems[existingIndex] = newItem
+                        } else {
+                            feedItems.add(newItem)
+                        }
                     }
                     feedAdapter.setCurrentUserId(currentUserId)
                     feedAdapter.notifyDataSetChanged()
@@ -275,6 +299,8 @@ class HomeActivity : AppCompatActivity() {
                 feedItems.removeAt(position)
                 feedAdapter.notifyItemRemoved(position)
                 Toast.makeText(this@HomeActivity, "پست حذف شد", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this@HomeActivity, "خطا در حذف پست", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -283,9 +309,10 @@ class HomeActivity : AppCompatActivity() {
         val editText = EditText(this).apply {
             setText(currentText)
             setPadding(40, 40, 40, 40)
+            hint = "ویرایش پست (پشتیبانی از مارک‌داون)..."
         }
         AlertDialog.Builder(this)
-            .setTitle("ویرایش پست (پشتیبانی از مارک‌داون)")
+            .setTitle("ویرایش پست")
             .setView(editText)
             .setPositiveButton("ثبت") { _, _ ->
                 val newText = editText.text.toString()
@@ -296,6 +323,7 @@ class HomeActivity : AppCompatActivity() {
                     if (res != null && JSONObject(res).getBoolean("success")) {
                         feedItems[position] = feedItems[position].copy(text = newText, isEdited = true)
                         feedAdapter.notifyItemChanged(position)
+                        Toast.makeText(this@HomeActivity, "پست ویرایش شد", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -306,6 +334,7 @@ class HomeActivity : AppCompatActivity() {
     private fun setupUploadView() {
         binding.btnSelectLogo.setOnClickListener { pickLogo.launch("image/*") }
         binding.btnSelectZip.setOnClickListener { pickZip.launch("application/zip") }
+        
         binding.btnUpload.setOnClickListener {
             if (selectedZipUri != null && selectedLogoUri != null) {
                 val name = binding.etSourceName.text.toString()
@@ -325,7 +354,11 @@ class HomeActivity : AppCompatActivity() {
                             Toast.makeText(this@HomeActivity, "خطا در ارسال", Toast.LENGTH_SHORT).show()
                         }
                     }
+                } else {
+                    Toast.makeText(this, "لطفاً نام و توضیحات را وارد کنید", Toast.LENGTH_SHORT).show()
                 }
+            } else {
+                Toast.makeText(this, "لوگو و فایل ZIP الزامی است", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -350,7 +383,7 @@ class HomeActivity : AppCompatActivity() {
             if (res != null) {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
-                    currentUserId = verifyTokenExtractId(token) // اگر نیاز بود اینجا محاسبه میشه
+                    currentUserId = extractUserIdFromToken(token)
                     binding.etFullName.setText(json.getString("full_name"))
                     binding.tvUsernameProfile.text = "@" + json.getString("username")
                     binding.tvEmailProfile.text = json.getString("email")
@@ -364,13 +397,15 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 
-    // شبیه‌سازی دیکود توکن برای گرفتن آی‌دی
-    private fun verifyTokenExtractId(token: String): Int {
+    private fun extractUserIdFromToken(token: String): Int {
         try {
             val parts = token.split(".")
-            val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
-            return JSONObject(payload).getInt("user_id")
-        } catch (e: Exception) { return -1 }
+            if (parts.size == 3) {
+                val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
+                return JSONObject(payload).getInt("user_id")
+            }
+        } catch (e: Exception) { }
+        return -1
     }
 
     private fun uploadProfilePic(uri: Uri) {
@@ -428,7 +463,9 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
         holder.b.tvSourceName.text = item.name
         holder.b.tvSourceDesc.text = item.desc
         holder.b.root.setOnClickListener { onClick(position) }
-        Glide.with(holder.b.root.context).load(NativeLib.getBaseUrl() + item.logo).placeholder(R.drawable.ic_sun).into(holder.b.imgSourceLogo)
+        
+        val fullLogoUrl = if (item.logo.startsWith("http")) item.logo else NativeLib.getBaseUrl() + item.logo
+        Glide.with(holder.b.root.context).load(fullLogoUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgSourceLogo)
     }
     override fun getItemCount(): Int = items.size
 }
@@ -452,7 +489,7 @@ class FeedAdapter(
         val item = items[position]
         holder.b.tvUsername.text = item.username
         
-        // رندر کردن مارک‌داون
+        // رندر مارک‌داون
         markwon.setMarkdown(holder.b.tvPostText, item.text)
         
         holder.b.tvLikeCount.text = item.likeCount.toString()
@@ -462,7 +499,7 @@ class FeedAdapter(
         val editStatus = if (item.isEdited) " (ویرایش شده)" else ""
         holder.b.tvPostDate.text = TimeUtils.getTimeAgo(item.createdAt) + editStatus
 
-        // فقط صاحب پست می‌تواند پست را ویرایش/حذف کند
+        // آیکون ۳ نقطه فقط برای صاحب پست
         if (item.userId == currentUserId && currentUserId != -1) {
             holder.b.tvUsername.setCompoundDrawablesWithIntrinsicBounds(0, 0, android.R.drawable.ic_menu_more, 0)
             holder.b.tvUsername.setOnClickListener { onOptionsClick(it, item, position) }
@@ -472,13 +509,20 @@ class FeedAdapter(
         }
 
         val baseUrl = NativeLib.getBaseUrl()
-        if (item.userPic.isNotEmpty()) Glide.with(holder.b.root.context).load(baseUrl + item.userPic).placeholder(R.drawable.ic_sun).into(holder.b.imgUserPic)
-        else holder.b.imgUserPic.setImageResource(R.drawable.ic_sun)
+        if (item.userPic.isNotEmpty()) {
+            val picUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
+            Glide.with(holder.b.root.context).load(picUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgUserPic)
+        } else {
+            holder.b.imgUserPic.setImageResource(R.drawable.ic_sun)
+        }
         
         if (item.media.isNotEmpty() && item.mediaType == "image") {
-            Glide.with(holder.b.root.context).load(baseUrl + item.media).into(holder.b.imgPostMedia)
+            val mediaUrl = if (item.media.startsWith("http")) item.media else baseUrl + item.media
+            Glide.with(holder.b.root.context).load(mediaUrl).into(holder.b.imgPostMedia)
             holder.b.imgPostMedia.visibility = View.VISIBLE
-        } else holder.b.imgPostMedia.visibility = View.GONE
+        } else {
+            holder.b.imgPostMedia.visibility = View.GONE
+        }
 
         if (item.isLiked) {
             holder.b.imgLike.setColorFilter(ContextCompat.getColor(holder.b.root.context, R.color.purple))

@@ -1,14 +1,18 @@
 package ir.codemarket.app
 
+import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import io.noties.markwon.Markwon
 import ir.codemarket.app.databinding.ActivityPostDetailsBinding
 import ir.codemarket.app.databinding.ItemCommentBinding
 import kotlinx.coroutines.CoroutineScope
@@ -22,115 +26,192 @@ class PostDetailsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPostDetailsBinding
     private lateinit var sessionManager: SessionManager
-    private var postId: Int = 0
-    private val comments = mutableListOf<CommentData>()
-    private lateinit var commentAdapter: CommentAdapter
+    private lateinit var markwon: Markwon
+    private var postId: Int = -1
+
+    private val commentsList = mutableListOf<PostCommentItem>()
+    private lateinit var commentsAdapter: PostCommentsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
         sessionManager = SessionManager(this)
-        
+        markwon = Markwon.create(this)
+
         if (sessionManager.isDarkMode()) {
             setTheme(R.style.Theme_CodeMarket_Dark)
-            window.decorView.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
             setTheme(R.style.Theme_CodeMarket_Light)
-            window.decorView.setBackgroundResource(R.drawable.bg_gradient_light)
         }
-        
+
         binding = ActivityPostDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        postId = intent.getIntExtra("post_id", 0)
-        
-        commentAdapter = CommentAdapter(comments, { }, { })
-        binding.recyclerComments.layoutManager = LinearLayoutManager(this)
-        binding.recyclerComments.adapter = commentAdapter
-        binding.recyclerComments.isNestedScrollingEnabled = false
-
-        binding.btnBack.setOnClickListener { 
-            finish() 
+        postId = intent.getIntExtra("post_id", -1)
+        if (postId == -1) {
+            finish()
+            return
         }
 
-        loadPostDetails()
+        binding.btnBack.setOnClickListener { finish() }
 
         binding.btnSendComment.setOnClickListener {
             val text = binding.etComment.text.toString()
             if (text.isNotEmpty()) {
                 sendComment(text)
+            } else {
+                Toast.makeText(this, "متن کامنت خالی است", Toast.LENGTH_SHORT).show()
             }
         }
+
+        setupCommentsRecyclerView()
+        loadPostDetails()
+    }
+
+    private fun setupCommentsRecyclerView() {
+        commentsAdapter = PostCommentsAdapter(commentsList, markwon)
+        binding.recyclerComments.layoutManager = LinearLayoutManager(this)
+        binding.recyclerComments.adapter = commentsAdapter
     }
 
     private fun loadPostDetails() {
         val token = sessionManager.fetchAuthToken() ?: ""
         CoroutineScope(Dispatchers.Main).launch {
-            val (res, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/feed/$postId/comments", token) }
-            if (res != null) {
-                val json = JSONObject(res)
+            val (response, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/feed/$postId/comments", token) }
+            if (response != null) {
+                val json = JSONObject(response)
                 if (json.getBoolean("success")) {
                     val post = json.getJSONObject("post")
                     
-                    binding.tvUsername.text = post.getString("username")
-                    binding.tvPostText.text = post.getString("text")
-                    binding.tvLikeCount.text = post.getInt("like_count").toString()
-                    binding.tvViewsCount.text = post.getInt("views").toString()
+                    binding.tvUsername.text = post.optString("username", "کاربر")
                     
+                    // اعمال مارک‌داون برای پست اصلی
+                    val text = post.optString("text", "")
+                    markwon.setMarkdown(binding.tvPostText, text)
+                    
+                    binding.tvLikeCount.text = post.optInt("like_count", 0).toString()
+                    binding.tvViewsCount.text = post.optInt("views", 0).toString()
+
+                    val isLiked = post.optBoolean("is_liked", false)
+                    if (isLiked) {
+                        binding.imgLike.setColorFilter(ContextCompat.getColor(this@PostDetailsActivity, R.color.purple))
+                        binding.tvLikeCount.setTextColor(ContextCompat.getColor(this@PostDetailsActivity, R.color.purple))
+                    } else {
+                        binding.imgLike.setColorFilter(Color.parseColor("#80FFFFFF"))
+                        binding.tvLikeCount.setTextColor(Color.parseColor("#80FFFFFF"))
+                    }
+
                     val baseUrl = NativeLib.getBaseUrl()
-                    val picUrl = post.optString("user_pic")
-                    if (picUrl.isNotEmpty()) {
-                        val fullPicUrl = if (picUrl.startsWith("http")) picUrl else baseUrl + picUrl
+                    val userPic = post.optString("user_pic", "")
+                    if (userPic.isNotEmpty()) {
+                        val fullPicUrl = if (userPic.startsWith("http")) userPic else baseUrl + userPic
                         Glide.with(this@PostDetailsActivity)
                             .load(fullPicUrl)
                             .placeholder(R.drawable.ic_sun)
                             .into(binding.imgUserPic)
+                    } else {
+                        binding.imgUserPic.setImageResource(R.drawable.ic_sun)
                     }
 
-                    val mediaUrl = post.optString("media")
-                    if (mediaUrl.isNotEmpty() && post.optString("media_type") == "image") {
-                        val fullMediaUrl = if (mediaUrl.startsWith("http")) mediaUrl else baseUrl + mediaUrl
-                        Glide.with(this@PostDetailsActivity)
-                            .load(fullMediaUrl)
-                            .into(binding.imgPostMedia)
+                    val media = post.optString("media", "")
+                    val mediaType = post.optString("media_type", "")
+                    if (media.isNotEmpty() && mediaType == "image") {
+                        val fullMediaUrl = if (media.startsWith("http")) media else baseUrl + media
+                        Glide.with(this@PostDetailsActivity).load(fullMediaUrl).into(binding.imgPostMedia)
                         binding.imgPostMedia.visibility = View.VISIBLE
                     } else {
                         binding.imgPostMedia.visibility = View.GONE
                     }
 
-                    val arr = json.optJSONArray("comments") ?: JSONArray()
-                    comments.clear()
-                    for (i in 0 until arr.length()) {
-                        val c = arr.getJSONObject(i)
-                        comments.add(CommentData(
-                            c.optInt("id", 0),
-                            c.getString("username"),
-                            c.getString("text"),
-                            c.optString("user_pic"),
-                            0,
-                            c.optBoolean("is_edited", false),
-                            false // isOwner برای توییت‌ها فعلا غیرفعال است
-                        ))
-                    }
-                    commentAdapter.notifyDataSetChanged()
+                    val commentsArray = json.optJSONArray("comments") ?: JSONArray()
+                    parseComments(commentsArray)
                 }
             }
         }
     }
 
+    private fun parseComments(array: JSONArray) {
+        commentsList.clear()
+        for (i in 0 until array.length()) {
+            val c = array.getJSONObject(i)
+            commentsList.add(
+                PostCommentItem(
+                    c.optInt("id", 0),
+                    c.optString("username", "کاربر"),
+                    c.optString("user_pic", ""),
+                    c.optString("text", ""),
+                    c.optString("date", "")
+                )
+            )
+        }
+        commentsAdapter.notifyDataSetChanged()
+    }
+
     private fun sendComment(text: String) {
         val token = sessionManager.fetchAuthToken() ?: ""
-        val payload = JSONObject().put("post_id", postId).put("text", text).toString()
+        val payload = JSONObject().apply {
+            put("post_id", postId)
+            put("text", text)
+        }.toString()
+
+        binding.btnSendComment.isEnabled = false
         CoroutineScope(Dispatchers.Main).launch {
             val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/feed/comment", payload, token) }
+            binding.btnSendComment.isEnabled = true
             if (res != null) {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
-                    binding.etComment.text?.clear()
-                    Toast.makeText(this@PostDetailsActivity, "کامنت ثبت شد", Toast.LENGTH_SHORT).show()
-                    loadPostDetails()
+                    binding.etComment.text.clear()
+                    loadPostDetails() 
                 }
+            } else {
+                Toast.makeText(this@PostDetailsActivity, "خطا در ارسال کامنت", Toast.LENGTH_SHORT).show()
             }
         }
     }
+}
+
+data class PostCommentItem(
+    val id: Int,
+    val username: String,
+    val userPic: String,
+    val text: String,
+    val date: String
+)
+
+class PostCommentsAdapter(
+    private val items: List<PostCommentItem>,
+    private val markwon: Markwon
+) : RecyclerView.Adapter<PostCommentsAdapter.ViewHolder>() {
+    
+    class ViewHolder(val b: ItemCommentBinding) : RecyclerView.ViewHolder(b.root)
+    
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        return ViewHolder(ItemCommentBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+    }
+    
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = items[position]
+        holder.b.tvCommentUsername.text = item.username
+        holder.b.tvCommentDate.text = TimeUtils.getTimeAgo(item.date)
+        
+        // در توییتر و فید، امتیاز دادن روی کامنت نداریم پس مخفیش می‌کنیم
+        holder.b.tvCommentRating.visibility = View.GONE 
+        
+        // اعمال مارک‌داون روی نظرات
+        markwon.setMarkdown(holder.b.tvCommentText, item.text)
+
+        val baseUrl = NativeLib.getBaseUrl()
+        if (item.userPic.isNotEmpty()) {
+            val fullUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
+            Glide.with(holder.b.root.context)
+                .load(fullUrl)
+                .placeholder(R.drawable.ic_sun)
+                .into(holder.b.imgCommentUser)
+        } else {
+            holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
+        }
+    }
+    
+    override fun getItemCount(): Int = items.size
 }

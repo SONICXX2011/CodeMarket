@@ -1,115 +1,194 @@
 package ir.codemarket.app
 
-import android.content.ContentValues
-import android.os.Build
+import android.app.DownloadManager
+import android.content.Context
+import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
+import android.os.Environment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import io.noties.markwon.Markwon
 import ir.codemarket.app.databinding.ActivitySourceDetailsBinding
 import ir.codemarket.app.databinding.ItemCommentBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.IOException
 
 class SourceDetailsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySourceDetailsBinding
     private lateinit var sessionManager: SessionManager
-    private var sourceId: Int = 0
-    private var sourceZipUrl: String = ""
-    private val comments = mutableListOf<CommentData>()
-    private lateinit var commentAdapter: CommentAdapter
+    private lateinit var markwon: Markwon
+    private var sourceId: Int = -1
+    private var zipUrl: String = ""
+
+    private val commentsList = mutableListOf<CommentItem>()
+    private lateinit var commentsAdapter: CommentsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sessionManager = SessionManager(this)
         
+        sessionManager = SessionManager(this)
+        markwon = Markwon.create(this)
+
         if (sessionManager.isDarkMode()) {
             setTheme(R.style.Theme_CodeMarket_Dark)
-            window.decorView.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
             setTheme(R.style.Theme_CodeMarket_Light)
-            window.decorView.setBackgroundResource(R.drawable.bg_gradient_light)
         }
-        
+
         binding = ActivitySourceDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        sourceId = intent.getIntExtra("source_id", 0)
-        
-        commentAdapter = CommentAdapter(comments, { position -> showEditDialog(position) }, { position -> deleteComment(position) })
-        binding.recyclerComments.layoutManager = LinearLayoutManager(this)
-        binding.recyclerComments.adapter = commentAdapter
-        binding.recyclerComments.isNestedScrollingEnabled = false
+        sourceId = intent.getIntExtra("source_id", -1)
+        if (sourceId == -1) {
+            finish()
+            return
+        }
 
         binding.btnBack.setOnClickListener { finish() }
+
         binding.btnDownload.setOnClickListener {
-            if (sourceZipUrl.isNotEmpty()) downloadFile(sourceZipUrl)
-            else Toast.makeText(this, "لینک دانلود موجود نیست", Toast.LENGTH_SHORT).show()
+            if (zipUrl.isNotEmpty()) {
+                downloadFile(zipUrl)
+            } else {
+                Toast.makeText(this, "لینک دانلود نامعتبر است", Toast.LENGTH_SHORT).show()
+            }
         }
 
         binding.btnAddComment.setOnClickListener {
             showAddCommentDialog()
         }
 
+        setupCommentsRecyclerView()
         loadSourceDetails()
+    }
+
+    private fun setupCommentsRecyclerView() {
+        commentsAdapter = CommentsAdapter(commentsList, markwon)
+        binding.recyclerComments.layoutManager = LinearLayoutManager(this)
+        binding.recyclerComments.adapter = commentsAdapter
+    }
+
+    private fun loadSourceDetails() {
+        val token = sessionManager.fetchAuthToken() ?: ""
+        CoroutineScope(Dispatchers.Main).launch {
+            val (response, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/source/$sourceId", token) }
+            if (response != null) {
+                val json = JSONObject(response)
+                if (json.getBoolean("success")) {
+                    val source = json.getJSONObject("source")
+                    binding.tvDetailsName.text = source.optString("name", "نامشخص")
+                    
+                    val desc = source.optString("description", "بدون توضیحات")
+                    markwon.setMarkdown(binding.tvDetailsDesc, desc)
+
+                    val logoUrl = source.optString("logo", "")
+                    if (logoUrl.isNotEmpty()) {
+                        val fullLogoUrl = if (logoUrl.startsWith("http")) logoUrl else NativeLib.getBaseUrl() + logoUrl
+                        Glide.with(this@SourceDetailsActivity)
+                            .load(fullLogoUrl)
+                            .placeholder(R.drawable.ic_sun)
+                            .into(binding.imgDetailsLogo)
+                    } else {
+                        binding.imgDetailsLogo.setImageResource(R.drawable.ic_sun)
+                    }
+
+                    val rawZipUrl = source.optString("zip_file", "")
+                    zipUrl = if (rawZipUrl.startsWith("http")) rawZipUrl else NativeLib.getBaseUrl() + rawZipUrl
+
+                    val commentsArray = source.optJSONArray("comments") ?: JSONArray()
+                    parseComments(commentsArray)
+                    calculateMyketRatings(commentsArray)
+                }
+            }
+        }
+    }
+
+    private fun parseComments(array: JSONArray) {
+        commentsList.clear()
+        for (i in 0 until array.length()) {
+            val c = array.getJSONObject(i)
+            commentsList.add(
+                CommentItem(
+                    c.optInt("id", 0),
+                    c.optString("username", "کاربر"),
+                    c.optString("user_pic", ""),
+                    c.optString("text", ""),
+                    c.optInt("rating", 0),
+                    c.optString("date", "")
+                )
+            )
+        }
+        commentsAdapter.notifyDataSetChanged()
+    }
+
+    private fun calculateMyketRatings(comments: JSONArray) {
+        val total = comments.length()
+        if (total == 0) {
+            binding.tvAverageRating.text = "0.0"
+            binding.pbRating5.progress = 0
+            binding.pbRating4.progress = 0
+            binding.pbRating3.progress = 0
+            binding.pbRating2.progress = 0
+            binding.pbRating1.progress = 0
+            return
+        }
+
+        var sum = 0.0
+        var r5 = 0; var r4 = 0; var r3 = 0; var r2 = 0; var r1 = 0
+
+        for (i in 0 until total) {
+            val c = comments.getJSONObject(i)
+            val rating = c.optDouble("rating", 0.0)
+            sum += rating
+
+            when {
+                rating >= 9 -> r5++
+                rating >= 7 -> r4++
+                rating >= 5 -> r3++
+                rating >= 3 -> r2++
+                else -> r1++
+            }
+        }
+
+        val avg = sum / total
+        binding.tvAverageRating.text = String.format(java.util.Locale.US, "%.1f", avg)
+
+        binding.pbRating5.progress = (r5 * 100) / total
+        binding.pbRating4.progress = (r4 * 100) / total
+        binding.pbRating3.progress = (r3 * 100) / total
+        binding.pbRating2.progress = (r2 * 100) / total
+        binding.pbRating1.progress = (r1 * 100) / total
     }
 
     private fun showAddCommentDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_comment, null)
         val etRating = dialogView.findViewById<EditText>(R.id.etRating)
-        val etText = dialogView.findViewById<EditText>(R.id.etCommentText)
+        val etCommentText = dialogView.findViewById<EditText>(R.id.etCommentText)
 
-        MaterialAlertDialogBuilder(this)
-            .setTitle("ثبت نظر و امتیاز")
+        AlertDialog.Builder(this)
             .setView(dialogView)
             .setPositiveButton("ارسال") { _, _ ->
-                val rating = etRating.text.toString().toIntOrNull() ?: 0
-                val text = etText.text.toString()
+                val ratingStr = etRating.text.toString()
+                val text = etCommentText.text.toString()
+                val rating = ratingStr.toIntOrNull() ?: 0
+
                 if (text.isNotEmpty() && rating in 1..10) {
                     sendComment(text, rating)
                 } else {
-                    Toast.makeText(this, "امتیاز باید بین ۱ تا ۱۰ باشد و متن خالی نباشد", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("لغو", null)
-            .show()
-    }
-
-    private fun showEditDialog(position: Int) {
-        val comment = comments[position]
-        val dialogView = layoutInflater.inflate(R.layout.dialog_add_comment, null)
-        val etRating = dialogView.findViewById<EditText>(R.id.etRating)
-        val etText = dialogView.findViewById<EditText>(R.id.etCommentText)
-
-        etRating.setText(comment.rating.toString())
-        etText.setText(comment.text)
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle("ویرایش نظر")
-            .setView(dialogView)
-            .setPositiveButton("به‌روزرسانی") { _, _ ->
-                val rating = etRating.text.toString().toIntOrNull() ?: 0
-                val text = etText.text.toString()
-                if (text.isNotEmpty() && rating in 1..10) {
-                    editComment(comment.id, text, rating, position)
-                } else {
-                    Toast.makeText(this, "اطلاعات نامعتبر است", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "امتیاز بین 1 تا 10 و متن الزامی است", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("لغو", null)
@@ -118,168 +197,65 @@ class SourceDetailsActivity : AppCompatActivity() {
 
     private fun sendComment(text: String, rating: Int) {
         val token = sessionManager.fetchAuthToken() ?: ""
-        val payload = JSONObject().put("text", text).put("rating", rating).toString()
+        val payload = JSONObject().apply {
+            put("text", text)
+            put("rating", rating)
+        }.toString()
+
         CoroutineScope(Dispatchers.Main).launch {
             val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/source/$sourceId/comment", payload, token) }
-            if (res != null && JSONObject(res).getBoolean("success")) {
-                Toast.makeText(this@SourceDetailsActivity, "نظر شما ثبت شد", Toast.LENGTH_SHORT).show()
-                loadSourceDetails()
-            }
-        }
-    }
-
-    private fun editComment(commentId: Int, text: String, rating: Int, position: Int) {
-        val token = sessionManager.fetchAuthToken() ?: ""
-        val payload = JSONObject().put("text", text).put("rating", rating).toString()
-        CoroutineScope(Dispatchers.Main).launch {
-            val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/source/$sourceId/comment/$commentId/edit", payload, token) }
-            if (res != null && JSONObject(res).getBoolean("success")) {
-                Toast.makeText(this@SourceDetailsActivity, "نظر ویرایش شد", Toast.LENGTH_SHORT).show()
-                loadSourceDetails()
-            }
-        }
-    }
-
-    private fun deleteComment(position: Int) {
-        val comment = comments[position]
-        val token = sessionManager.fetchAuthToken() ?: ""
-        MaterialAlertDialogBuilder(this)
-            .setTitle("حذف نظر")
-            .setMessage("آیا از حذف این نظر مطمئن هستید؟")
-            .setPositiveButton("بله، حذف کن") { _, _ ->
-                CoroutineScope(Dispatchers.Main).launch {
-                    val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/source/$sourceId/comment/${comment.id}/delete", "{}", token) }
-                    if (res != null && JSONObject(res).getBoolean("success")) {
-                        Toast.makeText(this@SourceDetailsActivity, "نظر حذف شد", Toast.LENGTH_SHORT).show()
-                        loadSourceDetails()
-                    }
-                }
-            }
-            .setNegativeButton("خیر", null)
-            .show()
-    }
-
-    private fun downloadFile(relativeUrl: String) {
-        val baseUrl = NativeLib.getBaseUrl()
-        val fullUrl = if (relativeUrl.startsWith("http")) relativeUrl else baseUrl + relativeUrl
-        binding.btnDownload.visibility = View.GONE
-        binding.progressDownload.visibility = View.VISIBLE
-        binding.tvDownloadPercent.visibility = View.VISIBLE
-        binding.progressDownload.progress = 0
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val client = OkHttpClient()
-                val request = Request.Builder().url(fullUrl).build()
-                client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) throw IOException("Download failed")
-                    val body = response.body ?: throw IOException("Null response body")
-                    val totalBytes = body.contentLength()
-                    var downloadedBytes = 0L
-                    val inputStream = body.byteStream()
-                    val buffer = ByteArray(8192)
-                    var bytesRead: Int
-
-                    val resolver = contentResolver
-                    val contentValues = ContentValues().apply {
-                        put(MediaStore.MediaColumns.DISPLAY_NAME, "source_$sourceId.zip")
-                        put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/CodeMarketDownload")
-                        }
-                    }
-                    val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues) ?: throw IOException("Failed")
-                    resolver.openOutputStream(uri)?.use { outputStream ->
-                        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                            outputStream.write(buffer, 0, bytesRead)
-                            downloadedBytes += bytesRead
-                            if (totalBytes > 0) {
-                                val progress = (downloadedBytes * 100 / totalBytes).toInt()
-                                withContext(Dispatchers.Main) {
-                                    binding.progressDownload.progress = progress
-                                    binding.tvDownloadPercent.text = "در حال دانلود... $progress%"
-                                }
-                            }
-                        }
-                        outputStream.flush()
-                    } ?: throw IOException("Stream error")
-
-                    withContext(Dispatchers.Main) {
-                        binding.btnDownload.visibility = View.VISIBLE
-                        binding.progressDownload.visibility = View.GONE
-                        binding.tvDownloadPercent.visibility = View.GONE
-                        Toast.makeText(this@SourceDetailsActivity, "دانلود با موفقیت انجام شد!", Toast.LENGTH_LONG).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@SourceDetailsActivity, "خطا در دانلود: ${e.message}", Toast.LENGTH_SHORT).show()
-                    binding.btnDownload.visibility = View.VISIBLE
-                    binding.progressDownload.visibility = View.GONE
-                    binding.tvDownloadPercent.visibility = View.GONE
-                }
-            }
-        }
-    }
-
-    private fun loadSourceDetails() {
-        comments.clear()
-        val token = sessionManager.fetchAuthToken() ?: ""
-        CoroutineScope(Dispatchers.Main).launch {
-            val (res, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/source/$sourceId", token) }
             if (res != null) {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
-                    val source = json.getJSONObject("source")
-                    binding.tvDetailsName.text = source.getString("name")
-                    binding.tvDetailsDesc.text = source.getString("description")
-                    sourceZipUrl = source.optString("zip_file", "")
-                    
-                    val logoUrl = source.optString("logo", "")
-                    if (logoUrl.isNotEmpty()) {
-                        val baseUrl = NativeLib.getBaseUrl()
-                        val fullLogoUrl = if (logoUrl.startsWith("http")) logoUrl else baseUrl + logoUrl
-                        Glide.with(this@SourceDetailsActivity)
-                            .load(fullLogoUrl)
-                            .placeholder(R.drawable.ic_sun)
-                            .into(binding.imgDetailsLogo)
-                    }
-                    
-                    val arr = source.optJSONArray("comments") ?: JSONArray()
-                    for (i in 0 until arr.length()) {
-                        val c = arr.getJSONObject(i)
-                        comments.add(CommentData(
-                            c.getInt("id"),
-                            c.getString("username"),
-                            c.getString("text"),
-                            c.optString("user_pic"),
-                            c.optInt("rating", 0),
-                            c.optBoolean("is_edited", false),
-                            c.optBoolean("is_owner", false)
-                        ))
-                    }
-                    commentAdapter.notifyDataSetChanged()
+                    Toast.makeText(this@SourceDetailsActivity, "نظر شما ثبت شد", Toast.LENGTH_SHORT).show()
+                    loadSourceDetails() 
                 }
             }
+        }
+    }
+
+    private fun downloadFile(url: String) {
+        try {
+            binding.tvDownloadPercent.visibility = View.VISIBLE
+            binding.progressDownload.visibility = View.VISIBLE
+            binding.tvDownloadPercent.text = "در حال شروع دانلود..."
+
+            val request = DownloadManager.Request(Uri.parse(url))
+                .setTitle(binding.tvDetailsName.text.toString())
+                .setDescription("در حال دانلود فایل...")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "source_${System.currentTimeMillis()}.zip")
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(true)
+
+            val manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            manager.enqueue(request)
+            
+            Toast.makeText(this, "دانلود در پس‌زمینه شروع شد", Toast.LENGTH_SHORT).show()
+            binding.tvDownloadPercent.text = "دانلود در حال انجام..."
+            binding.progressDownload.isIndeterminate = true
+            
+        } catch (e: Exception) {
+            Toast.makeText(this, "خطا در شروع دانلود", Toast.LENGTH_SHORT).show()
+            binding.tvDownloadPercent.visibility = View.GONE
+            binding.progressDownload.visibility = View.GONE
         }
     }
 }
 
-data class CommentData(
+data class CommentItem(
     val id: Int,
     val username: String,
-    val text: String,
     val userPic: String,
+    val text: String,
     val rating: Int,
-    val isEdited: Boolean,
-    val isOwner: Boolean
+    val date: String
 )
 
-class CommentAdapter(
-    private val items: List<CommentData>,
-    private val onEditClick: (Int) -> Unit,
-    private val onDeleteClick: (Int) -> Unit
-) : RecyclerView.Adapter<CommentAdapter.ViewHolder>() {
+class CommentsAdapter(
+    private val items: List<CommentItem>,
+    private val markwon: Markwon
+) : RecyclerView.Adapter<CommentsAdapter.ViewHolder>() {
 
     class ViewHolder(val b: ItemCommentBinding) : RecyclerView.ViewHolder(b.root)
 
@@ -289,33 +265,22 @@ class CommentAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.b.tvCommentUser.text = item.username
-        holder.b.tvCommentText.text = item.text
-        holder.b.tvCommentRating.text = "${item.rating}/10"
         
-        if (item.isEdited) {
-            holder.b.tvEditedTag.visibility = View.VISIBLE
-        } else {
-            holder.b.tvEditedTag.visibility = View.GONE
-        }
+        holder.b.tvCommentUsername.text = item.username
+        holder.b.tvCommentRating.text = item.rating.toString()
+        holder.b.tvCommentDate.text = TimeUtils.getTimeAgo(item.date)
+        
+        markwon.setMarkdown(holder.b.tvCommentText, item.text)
 
         val baseUrl = NativeLib.getBaseUrl()
         if (item.userPic.isNotEmpty()) {
-            val picUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
+            val fullUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
             Glide.with(holder.b.root.context)
-                .load(picUrl)
+                .load(fullUrl)
                 .placeholder(R.drawable.ic_sun)
-                .into(holder.b.imgCommentUserPic)
-        }
-
-        if (item.isOwner) {
-            holder.b.btnEditComment.visibility = View.VISIBLE
-            holder.b.btnDeleteComment.visibility = View.VISIBLE
-            holder.b.btnEditComment.setOnClickListener { onEditClick(position) }
-            holder.b.btnDeleteComment.setOnClickListener { onDeleteClick(position) }
+                .into(holder.b.imgCommentUser)
         } else {
-            holder.b.btnEditComment.visibility = View.GONE
-            holder.b.btnDeleteComment.visibility = View.GONE
+            holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
         }
     }
 
