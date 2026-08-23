@@ -38,22 +38,19 @@ class PostDetailsActivity : AppCompatActivity() {
         sessionManager = SessionManager(this)
         markwon = Markwon.create(this)
 
-        if (sessionManager.isDarkMode()) {
-            setTheme(R.style.Theme_CodeMarket_Dark)
-        } else {
-            setTheme(R.style.Theme_CodeMarket_Light)
-        }
+        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
+        else setTheme(R.style.Theme_CodeMarket_Light)
 
         binding = ActivityPostDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         postId = intent.getIntExtra("post_id", -1)
-        if (postId == -1) {
-            finish()
-            return
-        }
+        if (postId == -1) { finish(); return }
 
         binding.btnBack.setOnClickListener { finish() }
+
+        // فعال کردن منوی مارک‌داون روی ورودی کامنت
+        MarkdownUtils.applyMarkdownShortcuts(binding.etComment)
 
         binding.btnSendComment.setOnClickListener {
             val text = binding.etComment.text.toString()
@@ -69,8 +66,10 @@ class PostDetailsActivity : AppCompatActivity() {
     }
 
     private fun setupCommentsRecyclerView() {
-        commentsAdapter = PostCommentsAdapter(commentsList, markwon)
-        binding.recyclerComments.layoutManager = LinearLayoutManager(this)
+        commentsAdapter = PostCommentsAdapter(commentsList, markwon, sessionManager.getTextSize())
+        binding.recyclerComments.layoutManager = object : LinearLayoutManager(this) {
+            override fun canScrollVertically(): Boolean = false // رفع باگ نمایش 1 آیتم
+        }
         binding.recyclerComments.adapter = commentsAdapter
     }
 
@@ -85,7 +84,7 @@ class PostDetailsActivity : AppCompatActivity() {
                     
                     binding.tvUsername.text = post.optString("username", "کاربر")
                     
-                    // اعمال مارک‌داون برای پست اصلی
+                    binding.tvPostText.textSize = sessionManager.getTextSize()
                     val text = post.optString("text", "")
                     markwon.setMarkdown(binding.tvPostText, text)
                     
@@ -105,10 +104,7 @@ class PostDetailsActivity : AppCompatActivity() {
                     val userPic = post.optString("user_pic", "")
                     if (userPic.isNotEmpty()) {
                         val fullPicUrl = if (userPic.startsWith("http")) userPic else baseUrl + userPic
-                        Glide.with(this@PostDetailsActivity)
-                            .load(fullPicUrl)
-                            .placeholder(R.drawable.ic_sun)
-                            .into(binding.imgUserPic)
+                        Glide.with(this@PostDetailsActivity).load(fullPicUrl).placeholder(R.drawable.ic_sun).into(binding.imgUserPic)
                     } else {
                         binding.imgUserPic.setImageResource(R.drawable.ic_sun)
                     }
@@ -134,25 +130,14 @@ class PostDetailsActivity : AppCompatActivity() {
         commentsList.clear()
         for (i in 0 until array.length()) {
             val c = array.getJSONObject(i)
-            commentsList.add(
-                PostCommentItem(
-                    c.optInt("id", 0),
-                    c.optString("username", "کاربر"),
-                    c.optString("user_pic", ""),
-                    c.optString("text", ""),
-                    c.optString("date", "")
-                )
-            )
+            commentsList.add(PostCommentItem(c.optInt("id", 0), c.optString("username", "کاربر"), c.optString("user_pic", ""), c.optString("text", ""), c.optString("date", "")))
         }
         commentsAdapter.notifyDataSetChanged()
     }
 
     private fun sendComment(text: String) {
         val token = sessionManager.fetchAuthToken() ?: ""
-        val payload = JSONObject().apply {
-            put("post_id", postId)
-            put("text", text)
-        }.toString()
+        val payload = JSONObject().apply { put("post_id", postId); put("text", text) }.toString()
 
         binding.btnSendComment.isEnabled = false
         CoroutineScope(Dispatchers.Main).launch {
@@ -161,7 +146,7 @@ class PostDetailsActivity : AppCompatActivity() {
             if (res != null) {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
-                    binding.etComment.text.clear()
+                    binding.etComment.setText("") // رفع باگ clear()
                     loadPostDetails() 
                 }
             } else {
@@ -171,47 +156,29 @@ class PostDetailsActivity : AppCompatActivity() {
     }
 }
 
-data class PostCommentItem(
-    val id: Int,
-    val username: String,
-    val userPic: String,
-    val text: String,
-    val date: String
-)
+data class PostCommentItem(val id: Int, val username: String, val userPic: String, val text: String, val date: String)
 
-class PostCommentsAdapter(
-    private val items: List<PostCommentItem>,
-    private val markwon: Markwon
-) : RecyclerView.Adapter<PostCommentsAdapter.ViewHolder>() {
-    
+class PostCommentsAdapter(private val items: List<PostCommentItem>, private val markwon: Markwon, private val size: Float) : RecyclerView.Adapter<PostCommentsAdapter.ViewHolder>() {
     class ViewHolder(val b: ItemCommentBinding) : RecyclerView.ViewHolder(b.root)
     
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(ItemCommentBinding.inflate(LayoutInflater.from(parent.context), parent, false))
-    }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemCommentBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
         holder.b.tvCommentUsername.text = item.username
         holder.b.tvCommentDate.text = TimeUtils.getTimeAgo(item.date)
-        
-        // در توییتر و فید، امتیاز دادن روی کامنت نداریم پس مخفیش می‌کنیم
         holder.b.tvCommentRating.visibility = View.GONE 
         
-        // اعمال مارک‌داون روی نظرات
+        holder.b.tvCommentText.textSize = size
         markwon.setMarkdown(holder.b.tvCommentText, item.text)
 
         val baseUrl = NativeLib.getBaseUrl()
         if (item.userPic.isNotEmpty()) {
             val fullUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
-            Glide.with(holder.b.root.context)
-                .load(fullUrl)
-                .placeholder(R.drawable.ic_sun)
-                .into(holder.b.imgCommentUser)
+            Glide.with(holder.b.root.context).load(fullUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgCommentUser)
         } else {
             holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
         }
     }
-    
     override fun getItemCount(): Int = items.size
 }

@@ -9,23 +9,22 @@ object MarkdownUtils {
     fun applyMarkdownShortcuts(editText: EditText) {
         editText.customSelectionActionModeCallback = object : ActionMode.Callback {
             override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
-                // فلگ SHOW_AS_ACTION_ALWAYS باعث می‌شود گوشی‌های سامسونگ این موارد را حتماً در نوار شناور نشان دهند
-                menu.add(Menu.NONE, 1, Menu.NONE, "پررنگ").setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS or MenuItem.SHOW_AS_ACTION_WITH_TEXT)
-                menu.add(Menu.NONE, 2, Menu.NONE, "نقل قول").setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS or MenuItem.SHOW_AS_ACTION_WITH_TEXT)
-                menu.add(Menu.NONE, 3, Menu.NONE, "کد").setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS or MenuItem.SHOW_AS_ACTION_WITH_TEXT)
+                // این فلگ‌ها باعث میشن تو همه گوشی‌ها (مخصوصاً سامسونگ) دکمه‌ها حتماً نمایش داده بشن
+                menu.add(Menu.NONE, 1, 1, "پررنگ").setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS or MenuItem.SHOW_AS_ACTION_WITH_TEXT)
+                menu.add(Menu.NONE, 2, 2, "نقل قول").setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS or MenuItem.SHOW_AS_ACTION_WITH_TEXT)
+                menu.add(Menu.NONE, 3, 3, "کد").setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS or MenuItem.SHOW_AS_ACTION_WITH_TEXT)
                 return true
             }
 
             override fun onPrepareActionMode(mode: ActionMode, menu: Menu): Boolean {
-                return false
+                return true // اینجا حتماً باید true باشه تا منو آپدیت و نشون داده بشه
             }
 
             override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
                 val start = editText.selectionStart
                 val end = editText.selectionEnd
-                
-                if (start < 0 || end < 0) return false
-                
+                if (start < 0 || end < 0 || start == end) return false
+
                 val text = editText.text
 
                 when (item.itemId) {

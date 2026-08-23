@@ -47,7 +47,6 @@ class HomeActivity : AppCompatActivity() {
     private var currentPage = 1
     private var isLoadingFeed = false
     private var hasMoreFeed = true
-
     private var currentUserId = -1
 
     private var selectedZipUri: Uri? = null
@@ -77,20 +76,14 @@ class HomeActivity : AppCompatActivity() {
         sessionManager = SessionManager(this)
         markwon = Markwon.create(this)
 
-        if (sessionManager.isDarkMode()) {
-            setTheme(R.style.Theme_CodeMarket_Dark)
-        } else {
-            setTheme(R.style.Theme_CodeMarket_Light)
-        }
+        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
+        else setTheme(R.style.Theme_CodeMarket_Light)
 
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if (sessionManager.isDarkMode()) {
-            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
-        } else {
-            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
-        }
+        if (sessionManager.isDarkMode()) binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
+        else binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
 
         setupShopView()
         setupFeedView()
@@ -208,7 +201,7 @@ class HomeActivity : AppCompatActivity() {
 
     private fun setupFeedView() {
         val layoutManager = LinearLayoutManager(this)
-        feedAdapter = FeedAdapter(feedItems, currentUserId, markwon, 
+        feedAdapter = FeedAdapter(feedItems, currentUserId, markwon, sessionManager.getTextSize(),
             onLikeClick = { postId, pos -> toggleLike(postId, pos) }, 
             onPostClick = { postId -> openPostDetails(postId) },
             onOptionsClick = { view, post, pos -> showPostOptions(view, post, pos) }
@@ -246,9 +239,7 @@ class HomeActivity : AppCompatActivity() {
                     hasMoreFeed = json.getBoolean("has_more")
                     val arr = json.getJSONArray("posts")
                     
-                    if (currentPage == 1) {
-                        feedItems.clear()
-                    }
+                    if (currentPage == 1) feedItems.clear()
                     
                     for (i in 0 until arr.length()) {
                         val p = arr.getJSONObject(i)
@@ -261,11 +252,8 @@ class HomeActivity : AppCompatActivity() {
                         )
                         
                         val existingIndex = feedItems.indexOfFirst { it.id == newItem.id }
-                        if (existingIndex != -1) {
-                            feedItems[existingIndex] = newItem
-                        } else {
-                            feedItems.add(newItem)
-                        }
+                        if (existingIndex != -1) feedItems[existingIndex] = newItem
+                        else feedItems.add(newItem)
                     }
                     feedAdapter.setCurrentUserId(currentUserId)
                     feedAdapter.notifyDataSetChanged()
@@ -296,8 +284,6 @@ class HomeActivity : AppCompatActivity() {
                 feedItems.removeAt(position)
                 feedAdapter.notifyItemRemoved(position)
                 Toast.makeText(this@HomeActivity, "پست حذف شد", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this@HomeActivity, "خطا در حذف پست", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -473,7 +459,10 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
         val item = items[position]
         holder.b.tvSourceName.text = item.name
         holder.b.tvSourceDesc.text = item.desc
+        
+        // مشکل کلیک روی خود دکمه نمایش جزئیات هم با این حل شد
         holder.b.root.setOnClickListener { onClick(position) }
+        holder.b.btnShowDetails.setOnClickListener { onClick(position) }
         
         val fullLogoUrl = if (item.logo.startsWith("http")) item.logo else NativeLib.getBaseUrl() + item.logo
         Glide.with(holder.b.root.context).load(fullLogoUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgSourceLogo)
@@ -485,6 +474,7 @@ class FeedAdapter(
     private val items: List<FeedItem>,
     private var currentUserId: Int,
     private val markwon: Markwon,
+    private val size: Float,
     private val onLikeClick: (Int, Int) -> Unit,
     private val onPostClick: (Int) -> Unit,
     private val onOptionsClick: (View, FeedItem, Int) -> Unit
@@ -500,6 +490,7 @@ class FeedAdapter(
         val item = items[position]
         holder.b.tvUsername.text = item.username
         
+        holder.b.tvPostText.textSize = size
         markwon.setMarkdown(holder.b.tvPostText, item.text)
         
         holder.b.tvLikeCount.text = item.likeCount.toString()
@@ -544,6 +535,7 @@ class FeedAdapter(
         holder.b.btnLike.setOnClickListener { onLikeClick(item.id, position) }
         holder.b.btnComment.setOnClickListener { onPostClick(item.id) }
         holder.b.tvPostText.setOnClickListener { onPostClick(item.id) }
+        holder.b.root.setOnClickListener { onPostClick(item.id) }
     }
     override fun getItemCount(): Int = items.size
 }
