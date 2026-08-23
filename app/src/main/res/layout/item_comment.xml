@@ -5,9 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginVertical="8dp"
-    app:cardBackgroundColor="#1AFFFFFF"
+    app:cardBackgroundColor="?android:attr/colorBackground"
     app:cardCornerRadius="16dp"
-    app:cardElevation="0dp">
+    app:cardElevation="2dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -26,7 +26,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:src="@drawable/ic_sun"
-                app:civ_circle_background_color="#33FFFFFF" />
+                app:civ_circle_background_color="#33888888" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -40,7 +40,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="کاربر"
-                    android:textColor="@android:color/white"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -49,7 +49,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="همین الان"
-                    android:textColor="#99FFFFFF"
+                    android:textColor="?android:attr/textColorSecondary"
                     android:textSize="11sp"
                     android:layout_marginTop="2dp" />
             </LinearLayout>
@@ -64,7 +64,18 @@
                 android:text="10"
                 android:background="#22FFD600"
                 android:paddingHorizontal="10dp"
-                android:paddingVertical="4dp" />
+                android:paddingVertical="4dp"
+                android:layout_marginEnd="8dp"/>
+
+            <!-- دکمه سه نقطه برای حذف/ویرایش -->
+            <ImageView
+                android:id="@+id/btnCommentOptions"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_more"
+                app:tint="?android:attr/textColorSecondary"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:visibility="gone" />
         </LinearLayout>
 
         <TextView
@@ -73,7 +84,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="متن نظر..."
-            android:textColor="#E6FFFFFF"
+            android:textColor="?android:attr/textColorPrimary"
             android:textSize="14sp"
             android:lineSpacingExtra="4dp" />
 

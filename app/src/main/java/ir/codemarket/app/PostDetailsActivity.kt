@@ -44,12 +44,19 @@ class PostDetailsActivity : AppCompatActivity() {
         binding = ActivityPostDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // اعمال بک‌گراند بر اساس تم کاربر
+        if (sessionManager.isDarkMode()) {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
+        } else {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
+        }
+
         postId = intent.getIntExtra("post_id", -1)
         if (postId == -1) { finish(); return }
 
         binding.btnBack.setOnClickListener { finish() }
 
-        // فعال کردن منوی مارک‌داون روی ورودی کامنت
+        // فعال کردن مارک‌داون برای اینپوت شناور جدید
         MarkdownUtils.applyMarkdownShortcuts(binding.etComment)
 
         binding.btnSendComment.setOnClickListener {
@@ -68,7 +75,7 @@ class PostDetailsActivity : AppCompatActivity() {
     private fun setupCommentsRecyclerView() {
         commentsAdapter = PostCommentsAdapter(commentsList, markwon, sessionManager.getTextSize())
         binding.recyclerComments.layoutManager = object : LinearLayoutManager(this) {
-            override fun canScrollVertically(): Boolean = false // رفع باگ نمایش 1 آیتم
+            override fun canScrollVertically(): Boolean = false // حل مشکل اسکرول
         }
         binding.recyclerComments.adapter = commentsAdapter
     }
@@ -85,8 +92,7 @@ class PostDetailsActivity : AppCompatActivity() {
                     binding.tvUsername.text = post.optString("username", "کاربر")
                     
                     binding.tvPostText.textSize = sessionManager.getTextSize()
-                    val text = post.optString("text", "")
-                    markwon.setMarkdown(binding.tvPostText, text)
+                    markwon.setMarkdown(binding.tvPostText, post.optString("text", ""))
                     
                     binding.tvLikeCount.text = post.optInt("like_count", 0).toString()
                     binding.tvViewsCount.text = post.optInt("views", 0).toString()
@@ -96,8 +102,8 @@ class PostDetailsActivity : AppCompatActivity() {
                         binding.imgLike.setColorFilter(ContextCompat.getColor(this@PostDetailsActivity, R.color.purple))
                         binding.tvLikeCount.setTextColor(ContextCompat.getColor(this@PostDetailsActivity, R.color.purple))
                     } else {
-                        binding.imgLike.setColorFilter(Color.parseColor("#80FFFFFF"))
-                        binding.tvLikeCount.setTextColor(Color.parseColor("#80FFFFFF"))
+                        binding.imgLike.setColorFilter(Color.parseColor("#80888888"))
+                        binding.tvLikeCount.setTextColor(Color.parseColor("#80888888"))
                     }
 
                     val baseUrl = NativeLib.getBaseUrl()
@@ -146,7 +152,7 @@ class PostDetailsActivity : AppCompatActivity() {
             if (res != null) {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
-                    binding.etComment.setText("") // رفع باگ clear()
+                    binding.etComment.setText("") 
                     loadPostDetails() 
                 }
             } else {
@@ -168,6 +174,7 @@ class PostCommentsAdapter(private val items: List<PostCommentItem>, private val 
         holder.b.tvCommentUsername.text = item.username
         holder.b.tvCommentDate.text = TimeUtils.getTimeAgo(item.date)
         holder.b.tvCommentRating.visibility = View.GONE 
+        holder.b.btnCommentOptions.visibility = View.GONE
         
         holder.b.tvCommentText.textSize = size
         markwon.setMarkdown(holder.b.tvCommentText, item.text)

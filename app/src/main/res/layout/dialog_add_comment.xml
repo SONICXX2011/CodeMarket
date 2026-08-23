@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="16dp"
-    app:cardBackgroundColor="#F21A1A2E"
+    app:cardBackgroundColor="?android:attr/colorBackground"
     app:cardCornerRadius="24dp"
     app:cardElevation="20dp">
 
@@ -18,7 +18,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="ثبت نظر و امتیاز"
-            android:textColor="@android:color/white"
+            android:textColor="?android:attr/textColorPrimary"
             android:textSize="20sp"
             android:textStyle="bold"
             android:layout_gravity="center"
@@ -30,7 +30,7 @@
             android:hint="امتیاز شما (1 تا 10)"
             app:hintTextColor="#5288C1"
             app:boxStrokeColor="#5288C1"
-            app:boxBackgroundColor="#1AFFFFFF"
+            app:boxBackgroundColor="#1A888888"
             app:boxCornerRadiusTopStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
             app:boxCornerRadiusBottomStart="12dp"
@@ -40,7 +40,7 @@
                 android:id="@+id/etRating"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 android:inputType="number"
                 android:maxLength="2" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -52,7 +52,7 @@
             android:hint="توضیحات (پشتیبانی از مارک‌داون)"
             app:hintTextColor="#5288C1"
             app:boxStrokeColor="#5288C1"
-            app:boxBackgroundColor="#1AFFFFFF"
+            app:boxBackgroundColor="#1A888888"
             app:boxCornerRadiusTopStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
             app:boxCornerRadiusBottomStart="12dp"
@@ -64,7 +64,7 @@
                 android:layout_height="wrap_content"
                 android:minLines="4"
                 android:gravity="top|start"
-                android:textColor="@android:color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 android:inputType="textMultiLine" />
         </com.google.android.material.textfield.TextInputLayout>
 

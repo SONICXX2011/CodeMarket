@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -35,6 +36,8 @@ class SourceDetailsActivity : AppCompatActivity() {
     private var isDownloading = false
     private var progressJob: Job? = null
 
+    private var currentUserId = -1
+
     private val commentsList = mutableListOf<CommentItem>()
     private lateinit var commentsAdapter: CommentsAdapter
 
@@ -44,11 +47,21 @@ class SourceDetailsActivity : AppCompatActivity() {
         sessionManager = SessionManager(this)
         markwon = Markwon.create(this)
 
-        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
-        else setTheme(R.style.Theme_CodeMarket_Light)
+        // تنظیم داینامیک تم و بک‌گراند اصلی
+        if (sessionManager.isDarkMode()) {
+            setTheme(R.style.Theme_CodeMarket_Dark)
+        } else {
+            setTheme(R.style.Theme_CodeMarket_Light)
+        }
 
         binding = ActivitySourceDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        if (sessionManager.isDarkMode()) {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
+        } else {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
+        }
 
         sourceId = intent.getIntExtra("source_id", -1)
         if (sourceId == -1) { finish(); return }
@@ -75,15 +88,27 @@ class SourceDetailsActivity : AppCompatActivity() {
 
         binding.btnAddComment.setOnClickListener { showAddCommentDialog() }
 
+        extractUserId()
         setupCommentsRecyclerView()
         loadSourceDetails()
     }
 
+    private fun extractUserId() {
+        val token = sessionManager.fetchAuthToken() ?: return
+        try {
+            val parts = token.split(".")
+            if (parts.size == 3) {
+                val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
+                currentUserId = JSONObject(payload).getInt("user_id")
+            }
+        } catch (e: Exception) { }
+    }
+
     private fun setupCommentsRecyclerView() {
-        commentsAdapter = CommentsAdapter(commentsList, markwon, sessionManager.getTextSize())
-        binding.recyclerComments.layoutManager = object : LinearLayoutManager(this) {
-            override fun canScrollVertically(): Boolean = false
+        commentsAdapter = CommentsAdapter(commentsList, markwon, sessionManager.getTextSize(), currentUserId) { view, comment, pos ->
+            showCommentOptions(view, comment, pos)
         }
+        binding.recyclerComments.layoutManager = LinearLayoutManager(this)
         binding.recyclerComments.adapter = commentsAdapter
     }
 
@@ -124,6 +149,7 @@ class SourceDetailsActivity : AppCompatActivity() {
             commentsList.add(
                 CommentItem(
                     c.optInt("id", 0),
+                    c.optInt("user_id", -1),
                     c.optString("username", "کاربر"),
                     c.optString("user_pic", ""),
                     c.optString("text", ""),
@@ -137,8 +163,10 @@ class SourceDetailsActivity : AppCompatActivity() {
 
     private fun calculateMyketRatings(comments: JSONArray) {
         val total = comments.length()
+        binding.tvTotalRatings.text = "از $total نظر"
         if (total == 0) {
             binding.tvAverageRating.text = "0.0"
+            binding.ratingBarStars.rating = 0f
             binding.pbRating5.progress = 0; binding.pbRating4.progress = 0; binding.pbRating3.progress = 0; binding.pbRating2.progress = 0; binding.pbRating1.progress = 0
             return
         }
@@ -151,7 +179,11 @@ class SourceDetailsActivity : AppCompatActivity() {
                 rating >= 9 -> r5++; rating >= 7 -> r4++; rating >= 5 -> r3++; rating >= 3 -> r2++; else -> r1++
             }
         }
-        binding.tvAverageRating.text = String.format(java.util.Locale.US, "%.1f", sum / total)
+        
+        val avg = sum / total
+        binding.tvAverageRating.text = String.format(java.util.Locale.US, "%.1f", avg)
+        binding.ratingBarStars.rating = (avg / 2).toFloat() // تبدیل بازه ۱۰ به ۵ ستاره
+
         binding.pbRating5.progress = (r5 * 100) / total
         binding.pbRating4.progress = (r4 * 100) / total
         binding.pbRating3.progress = (r3 * 100) / total
@@ -203,6 +235,63 @@ class SourceDetailsActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun showCommentOptions(view: View, comment: CommentItem, position: Int) {
+        val popup = PopupMenu(this, view)
+        popup.menu.add("ویرایش")
+        popup.menu.add("حذف")
+        popup.setOnMenuItemClickListener { item ->
+            when (item.title) {
+                "حذف" -> deleteComment(comment.id)
+                "ویرایش" -> editCommentDialog(comment)
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun deleteComment(commentId: Int) {
+        val token = sessionManager.fetchAuthToken() ?: ""
+        CoroutineScope(Dispatchers.Main).launch {
+            val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/source/$sourceId/comment/$commentId/delete", "{}", token) }
+            if (res != null && JSONObject(res).getBoolean("success")) {
+                Toast.makeText(this@SourceDetailsActivity, "کامنت حذف شد", Toast.LENGTH_SHORT).show()
+                loadSourceDetails()
+            }
+        }
+    }
+
+    private fun editCommentDialog(comment: CommentItem) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_add_comment, null)
+        val etRating = dialogView.findViewById<EditText>(R.id.etRating)
+        val etCommentText = dialogView.findViewById<EditText>(R.id.etCommentText)
+        val btnSubmit = dialogView.findViewById<MaterialButton>(R.id.btnSubmitDialog)
+
+        etRating.setText(comment.rating.toString())
+        etCommentText.setText(comment.text)
+        MarkdownUtils.applyMarkdownShortcuts(etCommentText)
+
+        val dialog = AlertDialog.Builder(this).setView(dialogView).create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        btnSubmit.setOnClickListener {
+            val rating = etRating.text.toString().toIntOrNull() ?: 0
+            val text = etCommentText.text.toString()
+
+            if (text.isNotEmpty() && rating in 1..10) {
+                dialog.dismiss()
+                val token = sessionManager.fetchAuthToken() ?: ""
+                val payload = JSONObject().apply { put("text", text); put("rating", rating) }.toString()
+                CoroutineScope(Dispatchers.Main).launch {
+                    val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/source/$sourceId/comment/${comment.id}/edit", payload, token) }
+                    if (res != null && JSONObject(res).getBoolean("success")) loadSourceDetails()
+                }
+            } else {
+                Toast.makeText(this, "مشخصات نامعتبر", Toast.LENGTH_SHORT).show()
+            }
+        }
+        dialog.show()
     }
 
     private fun downloadFile(url: String) {
@@ -260,9 +349,9 @@ class SourceDetailsActivity : AppCompatActivity() {
     }
 }
 
-// این دیتا کلاس همون چیزیه که جا مونده بود و باعث ارور شد!
 data class CommentItem(
     val id: Int,
+    val userId: Int,
     val username: String,
     val userPic: String,
     val text: String,
@@ -273,7 +362,9 @@ data class CommentItem(
 class CommentsAdapter(
     private val items: List<CommentItem>,
     private val markwon: Markwon,
-    private val size: Float
+    private val size: Float,
+    private val currentUserId: Int,
+    private val onOptionsClick: (View, CommentItem, Int) -> Unit
 ) : RecyclerView.Adapter<CommentsAdapter.ViewHolder>() {
 
     class ViewHolder(val b: ItemCommentBinding) : RecyclerView.ViewHolder(b.root)
@@ -289,8 +380,16 @@ class CommentsAdapter(
         holder.b.tvCommentText.textSize = size
         markwon.setMarkdown(holder.b.tvCommentText, item.text)
 
+        if (item.userId == currentUserId && currentUserId != -1) {
+            holder.b.btnCommentOptions.visibility = View.VISIBLE
+            holder.b.btnCommentOptions.setOnClickListener { onOptionsClick(it, item, position) }
+        } else {
+            holder.b.btnCommentOptions.visibility = View.GONE
+        }
+
+        val baseUrl = NativeLib.getBaseUrl()
         if (item.userPic.isNotEmpty()) {
-            val fullUrl = if (item.userPic.startsWith("http")) item.userPic else NativeLib.getBaseUrl() + item.userPic
+            val fullUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
             Glide.with(holder.b.root.context).load(fullUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgCommentUser)
         } else {
             holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)

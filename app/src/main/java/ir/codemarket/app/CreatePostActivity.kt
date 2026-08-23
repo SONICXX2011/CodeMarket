@@ -21,7 +21,6 @@ class CreatePostActivity : AppCompatActivity() {
     private lateinit var sessionManager: SessionManager
     private var selectedMediaUri: Uri? = null
 
-    // فقط اجازه انتخاب عکس داده می‌شود (image/*)
     private val pickMedia = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedMediaUri = it
@@ -32,25 +31,23 @@ class CreatePostActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
         sessionManager = SessionManager(this)
-        if (sessionManager.isDarkMode()) {
-            setTheme(R.style.Theme_CodeMarket_Dark)
-        } else {
-            setTheme(R.style.Theme_CodeMarket_Light)
-        }
+        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
+        else setTheme(R.style.Theme_CodeMarket_Light)
         
         binding = ActivityCreatePostBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.btnBack.setOnClickListener { 
-            finish() 
-        }
+        if (sessionManager.isDarkMode()) binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
+        else binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
 
-        binding.btnPickMedia.setOnClickListener { 
-            pickMedia.launch("image/*") 
-        }
+        // اینجا مارک‌داون اعمال شده
+        MarkdownUtils.applyMarkdownShortcuts(binding.etPostText)
 
-        // دکمه حذف عکس انتخاب شده
+        binding.btnBack.setOnClickListener { finish() }
+        binding.btnPickMedia.setOnClickListener { pickMedia.launch("image/*") }
+
         binding.btnRemoveImage.setOnClickListener {
             selectedMediaUri = null
             binding.imgPreview.setImageDrawable(null)
@@ -75,9 +72,11 @@ class CreatePostActivity : AppCompatActivity() {
             mediaFile = File(cacheDir, "temp_post.$ext").apply { copyFromUri(mediaUri) }
         }
 
+        binding.btnPost.isEnabled = false
         CoroutineScope(Dispatchers.Main).launch {
             val token = sessionManager.fetchAuthToken() ?: ""
             val (res, _) = withContext(Dispatchers.IO) { ApiClient.uploadPost("/api/feed/post", token, text, mediaFile) }
+            binding.btnPost.isEnabled = true
             if (res != null && JSONObject(res).getBoolean("success")) {
                 Toast.makeText(this@CreatePostActivity, "پست منتشر شد", Toast.LENGTH_SHORT).show()
                 finish()
