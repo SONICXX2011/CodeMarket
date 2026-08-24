@@ -102,6 +102,14 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         sessionManager = SessionManager(this)
+        
+        // <<< بررسی امنیتی سشن: اگر توکن ندارد، پرت شود بیرون به صفحه لاگین >>>
+        if (sessionManager.fetchAuthToken().isNullOrEmpty()) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+
         markwon = MarkdownUtils.createMarkwon(this)
 
         if (sessionManager.isDarkMode()) {
@@ -157,7 +165,6 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
-        // --- منطق تب‌های خانه (عمومی / شخصی) ---
         binding.tabPublic.setOnClickListener {
             binding.tabPublic.setTextColor(Color.parseColor("#5288C1"))
             binding.tabPublic.setTypeface(null, Typeface.BOLD)
@@ -236,7 +243,6 @@ class HomeActivity : AppCompatActivity() {
             val (res, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/chats", token) }
             
             chatItems.clear()
-            // پیام‌های ذخیره شده به عنوان اولین آیتم
             chatItems.add(ChatListItem(
                 id = 0, targetUserId = currentUserId, targetUsername = "پیام‌های ذخیره شده",
                 targetPic = "", lastMessage = "یادداشت‌ها و فایل‌های شخصی", date = "", unreadCount = 0
@@ -612,8 +618,6 @@ class HomeActivity : AppCompatActivity() {
                         val fullPicUrl = if (picUrl.startsWith("http")) picUrl else NativeLib.getBaseUrl() + picUrl
                         Glide.with(this@HomeActivity).load(fullPicUrl).placeholder(R.drawable.my_icon).into(binding.imgProfile)
                     }
-                    
-                    // فراخوانی لود چت‌ها بعد از گرفتن آیدی
                     loadChatsData()
                 }
             }
@@ -723,9 +727,12 @@ class FeedAdapter(
         holder.b.tvPostDate.text = TimeUtils.getTimeAgo(item.createdAt) + editStatus
 
         val baseUrl = NativeLib.getBaseUrl()
+        
+        // <<< اعمال رنگ VIP و تیک آبی برای تمام کاربران در فید و پست‌ها >>>
         if (item.isVip && item.badgeUrl.isNotEmpty()) {
             holder.b.imgBadge.visibility = View.VISIBLE
-            Glide.with(holder.b.root.context).load(if (item.badgeUrl.startsWith("http")) item.badgeUrl else baseUrl + item.badgeUrl).into(holder.b.imgBadge)
+            val badgeFullUrl = if (item.badgeUrl.startsWith("http")) item.badgeUrl else baseUrl + item.badgeUrl
+            Glide.with(holder.b.root.context).load(badgeFullUrl).into(holder.b.imgBadge)
         } else {
             holder.b.imgBadge.visibility = View.GONE
         }

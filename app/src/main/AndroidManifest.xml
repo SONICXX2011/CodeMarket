@@ -15,7 +15,9 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
+    <!-- اضافه شدن android:name=".App" برای فعال شدن سیستم لاگر شما -->
     <application
+        android:name=".App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -55,28 +57,9 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".PostDetailsActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".SourceDetailsActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".CreatePostActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
             android:name=".UserProfileActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false" />
 
     </application>
 </manifest>
