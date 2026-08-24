@@ -2,15 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- دسترسی‌های اینترنت و شبکه (برای ارتباط با سرور و دانلود/آپلود) -->
+    <!-- دسترسی‌های اینترنت و شبکه -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- دسترسی‌های خواندن و نوشتن فایل در اندروید 12 و پایین‌تر -->
+    <!-- دسترسی‌های خواندن و نوشتن فایل -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     
-    <!-- دسترسی‌های مخصوص اندروید 13 و بالاتر برای رسانه‌ها (عکس، ویدیو، ویس) -->
+    <!-- دسترسی‌های مخصوص اندروید 13 و بالاتر برای رسانه‌ها -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
@@ -20,32 +20,44 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.CodeMarket"
         android:usesCleartextTraffic="true"
         android:requestLegacyExternalStorage="true"
         tools:targetApi="31">
 
-        <!-- اکتیویتی خانه (لانچر اصلی برنامه) -->
+        <!-- صفحه لاگین (نقطه شروع برنامه - مشکل از اینجا بود که حل شد) -->
         <activity
-            android:name=".HomeActivity"
+            android:name=".LoginActivity"
             android:exported="true"
-            android:windowSoftInputMode="adjustPan">
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- اکتیویتی چت تلگرامی (با تنظیم کیبورد برای بالا اومدن نوار چت) -->
+        <!-- صفحه ثبت نام -->
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- اکتیویتی خانه (دیگر نقطه شروع نیست) -->
+        <activity
+            android:name=".HomeActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+
+        <!-- اکتیویتی چت تلگرامی -->
         <activity
             android:name=".ChatActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- اکتیویتی جزئیات پست و کامنت‌ها -->
+        <!-- اکتیویتی جزئیات پست -->
         <activity
             android:name=".PostDetailsActivity"
             android:exported="false"
