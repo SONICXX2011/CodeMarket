@@ -14,7 +14,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.google.android.material.card.MaterialCardView
 import io.noties.markwon.Markwon
 import ir.codemarket.app.databinding.ActivityChatBinding
 import ir.codemarket.app.databinding.ItemChatMessageBinding
@@ -59,14 +58,20 @@ class ChatActivity : AppCompatActivity() {
         markwon = MarkdownUtils.createMarkwon(this)
         extractCurrentUserId()
 
-        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
-        else setTheme(R.style.Theme_CodeMarket_Light)
+        if (sessionManager.isDarkMode()) {
+            setTheme(R.style.Theme_CodeMarket_Dark)
+        } else {
+            setTheme(R.style.Theme_CodeMarket_Light)
+        }
 
         binding = ActivityChatBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if (sessionManager.isDarkMode()) binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
-        else binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
+        if (sessionManager.isDarkMode()) {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
+        } else {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
+        }
 
         targetUserId = intent.getIntExtra("target_id", -1)
         targetUsername = intent.getStringExtra("target_username") ?: "کاربر"
@@ -270,11 +275,12 @@ class ChatMessagesAdapter(
         holder.b.layoutMessageRoot.gravity = if (isMe) Gravity.END else Gravity.START
         
         if (isMe) {
-            holder.b.cardMessageBubble.setCardBackgroundColor(Color.parseColor("#225288C1")) // آبی شیشه‌ای برای خودم
+            holder.b.cardMessageBubble.setCardBackgroundColor(Color.parseColor("#225288C1"))
             holder.b.imgMessageStatus.visibility = View.VISIBLE
-            holder.b.imgMessageStatus.setImageResource(if (item.isRead) R.drawable.ic_tick else R.drawable.ic_tick) // در آینده می‌توان دو تیک کرد
+            // رفع باگ اصلی: استفاده از آیکون پیش‌فرض اندروید به جای ic_tick
+            holder.b.imgMessageStatus.setImageResource(android.R.drawable.checkbox_on_background)
         } else {
-            holder.b.cardMessageBubble.setCardBackgroundColor(Color.parseColor("#1A888888")) // طوسی شیشه‌ای برای طرف مقابل
+            holder.b.cardMessageBubble.setCardBackgroundColor(Color.parseColor("#1A888888"))
             holder.b.imgMessageStatus.visibility = View.GONE
         }
 
