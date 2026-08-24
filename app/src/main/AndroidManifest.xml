@@ -15,7 +15,6 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
-    <!-- اضافه شدن android:name=".App" برای فعال شدن سیستم لاگر شما -->
     <application
         android:name=".App"
         android:allowBackup="true"

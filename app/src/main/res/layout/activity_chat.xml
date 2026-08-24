@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground">
 
-    <!-- نوار شیشه‌ای بالای چت -->
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
@@ -73,7 +72,6 @@
             app:tint="?android:attr/textColorPrimary" />
     </LinearLayout>
 
-    <!-- لیست پیام‌ها -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerChat"
         android:layout_width="match_parent"
@@ -84,7 +82,6 @@
         app:layout_constraintBottom_toTopOf="@id/bottomInputLayout"
         app:layout_constraintTop_toBottomOf="@id/topBar" />
 
-    <!-- بخش نوشتن پیام، ارسال، ریپلای و وویس -->
     <LinearLayout
         android:id="@+id/bottomInputLayout"
         android:layout_width="match_parent"
@@ -94,7 +91,6 @@
         android:paddingBottom="12dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- پیش نمایش ریپلای پیام -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/layoutReplyPreview"
             android:layout_width="match_parent"
@@ -150,7 +146,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- پیش نمایش مدیا انتخاب شده قبل از ارسال -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/layoutMediaPreview"
             android:layout_width="match_parent"
@@ -179,7 +174,7 @@
             </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- نوار تایپ شیشه‌ای، گیره آپلود و دکمه ویس -->
+        <!-- کادر پایین چت با تنظیم دقیق دکمه ارسال -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -229,8 +224,7 @@
                     android:backgroundTint="#1A5288C1" 
                     android:src="@android:drawable/ic_menu_send" 
                     android:padding="10dp" 
-                    app:tint="#5288C1" 
-                    android:visibility="gone" />
+                    app:tint="#5288C1" />
                     
                 <ImageView 
                     android:id="@+id/btnMic" 
@@ -241,7 +235,8 @@
                     android:backgroundTint="#1A5288C1" 
                     android:src="@android:drawable/ic_btn_speak_now" 
                     android:padding="10dp" 
-                    app:tint="#5288C1" />
+                    app:tint="#5288C1" 
+                    android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

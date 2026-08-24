@@ -202,7 +202,6 @@ class ChatActivity : AppCompatActivity() {
         binding.etMessage.requestFocus()
     }
 
-    // رفع کامل ارور Resource$NotFoundException با برداشتن اتریبیوت معیوب
     private fun showMessageOptions(msg: ChatMessageItem, position: Int) {
         try {
             val bottomSheet = BottomSheetDialog(this)
@@ -230,7 +229,6 @@ class ChatActivity : AppCompatActivity() {
                     orientation = LinearLayout.HORIZONTAL
                     setPadding(20, 30, 20, 30)
                     gravity = Gravity.CENTER_VERTICAL
-                    // استفاده از رنگ پس‌زمینه ایمن برای جلوگیری از کرش
                     setBackgroundColor(Color.TRANSPARENT)
                     setOnClickListener { bottomSheet.dismiss(); onClick() }
                 }
@@ -282,12 +280,17 @@ class ChatActivity : AppCompatActivity() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/chats/message/$msgId/delete", "{}", token) }
-                if (res != null && JSONObject(res).getBoolean("success")) {
-                    messagesList.removeAt(position)
-                    chatAdapter.notifyItemRemoved(position)
+                if (res != null) {
+                    val json = JSONObject(res)
+                    if (json.getBoolean("success")) {
+                        messagesList.removeAt(position)
+                        chatAdapter.notifyItemRemoved(position)
+                        Toast.makeText(this@ChatActivity, "پیام حذف شد", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } catch (e: Exception) {
                 Logger.logEvent("DeleteMessageError", e.stackTraceToString())
+                Toast.makeText(this@ChatActivity, "خطا در حذف پیام", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -310,12 +313,17 @@ class ChatActivity : AppCompatActivity() {
                         try {
                             val payload = JSONObject().put("text", newText).toString()
                             val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/chats/message/${msg.id}/edit", payload, token) }
-                            if (res != null && JSONObject(res).getBoolean("success")) {
-                                messagesList[position] = messagesList[position].copy(text = newText, isEdited = true)
-                                chatAdapter.notifyItemChanged(position)
+                            if (res != null) {
+                                val json = JSONObject(res)
+                                if (json.getBoolean("success")) {
+                                    messagesList[position] = messagesList[position].copy(text = newText, isEdited = true)
+                                    chatAdapter.notifyItemChanged(position)
+                                    Toast.makeText(this@ChatActivity, "پیام ویرایش شد", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         } catch (e: Exception) {
                             Logger.logEvent("EditMessageError", e.stackTraceToString())
+                            Toast.makeText(this@ChatActivity, "خطا در ویرایش پیام", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
