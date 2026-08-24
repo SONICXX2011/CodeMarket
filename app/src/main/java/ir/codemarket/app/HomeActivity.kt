@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import io.noties.markwon.Markwon
 import ir.codemarket.app.databinding.ActivityHomeBinding
+import ir.codemarket.app.databinding.ItemChatListBinding
 import ir.codemarket.app.databinding.ItemFeedPostBinding
 import ir.codemarket.app.databinding.ItemShopBinding
 import kotlinx.coroutines.CoroutineScope
@@ -43,6 +44,10 @@ class HomeActivity : AppCompatActivity() {
 
     private val feedItems = mutableListOf<FeedItem>()
     private lateinit var feedAdapter: FeedAdapter
+
+    // لیست چت‌ها
+    private val chatItems = mutableListOf<ChatListItem>()
+    private lateinit var chatListAdapter: ChatListAdapter
     
     private var currentPage = 1
     private var isLoadingFeed = false
@@ -87,6 +92,7 @@ class HomeActivity : AppCompatActivity() {
 
         setupShopView()
         setupFeedView()
+        setupChatsView()
         setupUploadView()
         setupProfileView()
 
@@ -97,9 +103,13 @@ class HomeActivity : AppCompatActivity() {
 
         binding.btnRefresh.setOnClickListener {
             it.animate().rotationBy(360f).setDuration(500).start()
-            binding.swipeRefresh.isRefreshing = true
-            currentPage = 1
-            loadFeedData()
+            if (binding.recyclerFeed.visibility == View.VISIBLE) {
+                binding.swipeRefresh.isRefreshing = true
+                currentPage = 1
+                loadFeedData()
+            } else {
+                loadChatsData() // آپدیت لیست چت‌ها
+            }
         }
 
         binding.btnAddPost.setOnClickListener {
@@ -107,8 +117,43 @@ class HomeActivity : AppCompatActivity() {
         }
         
         binding.swipeRefresh.setOnRefreshListener {
-            currentPage = 1
-            loadFeedData()
+            if (binding.recyclerFeed.visibility == View.VISIBLE) {
+                currentPage = 1
+                loadFeedData()
+            } else {
+                binding.swipeRefresh.isRefreshing = false
+                loadChatsData()
+            }
+        }
+
+        // هندل کردن تب‌های بالای بخش خانه (عمومی / شخصی)
+        binding.tabPublic.setOnClickListener {
+            binding.tabPublic.setTextColor(Color.parseColor("#5288C1"))
+            binding.tabPublic.textStyle = android.graphics.Typeface.BOLD
+            binding.tabPublic.setBackgroundResource(R.drawable.bg_glass_input)
+            
+            binding.tabPrivate.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+            binding.tabPrivate.textStyle = android.graphics.Typeface.NORMAL
+            binding.tabPrivate.setBackgroundColor(Color.TRANSPARENT)
+
+            binding.recyclerFeed.visibility = View.VISIBLE
+            binding.recyclerChats.visibility = View.GONE
+            binding.btnAddPost.visibility = View.VISIBLE
+        }
+
+        binding.tabPrivate.setOnClickListener {
+            binding.tabPrivate.setTextColor(Color.parseColor("#5288C1"))
+            binding.tabPrivate.textStyle = android.graphics.Typeface.BOLD
+            binding.tabPrivate.setBackgroundResource(R.drawable.bg_glass_input)
+            
+            binding.tabPublic.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+            binding.tabPublic.textStyle = android.graphics.Typeface.NORMAL
+            binding.tabPublic.setBackgroundColor(Color.TRANSPARENT)
+
+            binding.recyclerFeed.visibility = View.GONE
+            binding.recyclerChats.visibility = View.VISIBLE
+            binding.btnAddPost.visibility = View.GONE
+            loadChatsData()
         }
 
         binding.bottomNav.setOnItemSelectedListener { item ->
@@ -132,12 +177,38 @@ class HomeActivity : AppCompatActivity() {
         binding.profileContainer.visibility = if (section == "profile") View.VISIBLE else View.GONE
         binding.uploadContainer.visibility = if (section == "submit") View.VISIBLE else View.GONE
         
+        binding.layoutHomeTabs.visibility = if (section == "home") View.VISIBLE else View.GONE
         binding.btnSearchIcon.visibility = if (section == "shop") View.VISIBLE else View.GONE
         binding.spacer.visibility = View.VISIBLE
         binding.btnRefresh.visibility = if (section == "home") View.VISIBLE else View.GONE
-        binding.btnAddPost.visibility = if (section == "home") View.VISIBLE else View.GONE
+        
         binding.etSearch.visibility = View.GONE
         binding.topBar.visibility = if (section == "profile") View.GONE else View.VISIBLE
+
+        if (section == "home") {
+            if (binding.recyclerFeed.visibility == View.VISIBLE) binding.btnAddPost.visibility = View.VISIBLE
+        } else {
+            binding.btnAddPost.visibility = View.GONE
+        }
+    }
+
+    private fun setupChatsView() {
+        chatListAdapter = ChatListAdapter(chatItems) { chat ->
+            val intent = Intent(this, ChatActivity::class.java)
+            intent.putExtra("target_id", chat.targetUserId)
+            intent.putExtra("target_username", chat.targetUsername)
+            startActivity(intent)
+        }
+        binding.recyclerChats.layoutManager = LinearLayoutManager(this)
+        binding.recyclerChats.adapter = chatListAdapter
+    }
+
+    private fun loadChatsData() {
+        // فعلاً دمو برای نمایش UI بدون کرش تا وصل شدن به بک‌اند اصلی
+        chatItems.clear()
+        chatItems.add(ChatListItem(1, 2, "ali_dev", "", "سلام خوبی؟ پروژه چطور پیش میره؟", "12:30", 2))
+        chatItems.add(ChatListItem(2, 3, "sara_coder", "", "فایل‌ها رو برات فرستادم.", "دیروز", 0))
+        chatListAdapter.notifyDataSetChanged()
     }
 
     private fun setupShopView() {
@@ -204,7 +275,8 @@ class HomeActivity : AppCompatActivity() {
         feedAdapter = FeedAdapter(feedItems, currentUserId, markwon, sessionManager.getTextSize(),
             onLikeClick = { postId, pos -> toggleLike(postId, pos) }, 
             onPostClick = { postId -> openPostDetails(postId) },
-            onOptionsClick = { view, post, pos -> showPostOptions(view, post, pos) }
+            onOptionsClick = { view, post, pos -> showPostOptions(view, post, pos) },
+            onUserClick = { userId -> openUserProfile(userId) }
         )
         binding.recyclerFeed.layoutManager = layoutManager
         binding.recyclerFeed.adapter = feedAdapter
@@ -248,7 +320,8 @@ class HomeActivity : AppCompatActivity() {
                             p.optString("user_pic"), p.optString("text"), p.optString("media"),
                             p.optString("media_type"), p.optBoolean("is_liked"),
                             p.optInt("like_count"), p.optInt("comment_count"),
-                            p.optInt("views"), p.optString("created_at"), p.optBoolean("is_edited")
+                            p.optInt("views"), p.optString("created_at"), p.optBoolean("is_edited"),
+                            p.optBoolean("is_vip", false), p.optString("badge_url", ""), p.optString("custom_bg", "")
                         )
                         
                         val existingIndex = feedItems.indexOfFirst { it.id == newItem.id }
@@ -260,6 +333,12 @@ class HomeActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun openUserProfile(userId: Int) {
+        val intent = Intent(this, UserProfileActivity::class.java)
+        intent.putExtra("user_id", userId)
+        startActivity(intent)
     }
 
     private fun showPostOptions(view: View, post: FeedItem, position: Int) {
@@ -335,13 +414,10 @@ class HomeActivity : AppCompatActivity() {
                         val token = sessionManager.fetchAuthToken() ?: ""
                         val (res, _) = withContext(Dispatchers.IO) { ApiClient.uploadFile("/api/upload", token, zipFile, logoFile, fields) }
                         if (res != null && JSONObject(res).getBoolean("success")) {
-                            Toast.makeText(this@HomeActivity, "سورس برای تایید ادمین ارسال شد", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@HomeActivity, "سورس ارسال شد", Toast.LENGTH_SHORT).show()
                             binding.etSourceName.setText("")
                             binding.etSourceDesc.setText("")
-                            selectedZipUri = null
-                            selectedLogoUri = null
-                            binding.btnSelectZip.text = "انتخاب فایل ZIP سورس"
-                            binding.btnSelectLogo.text = "انتخاب لوگو سورس"
+                            selectedZipUri = null; selectedLogoUri = null
                         } else {
                             Toast.makeText(this@HomeActivity, "خطا در ارسال", Toast.LENGTH_SHORT).show()
                         }
@@ -364,8 +440,9 @@ class HomeActivity : AppCompatActivity() {
 
         binding.btnUpdateProfile.setOnClickListener {
             val fullName = binding.etFullName.text.toString()
+            val bio = binding.etBio.text.toString()
             CoroutineScope(Dispatchers.Main).launch {
-                val payload = JSONObject().put("full_name", fullName).toString()
+                val payload = JSONObject().put("full_name", fullName).put("bio", bio).toString()
                 val token = sessionManager.fetchAuthToken() ?: ""
                 withContext(Dispatchers.IO) { ApiClient.postRequest("/api/profile/update", payload, token) }
                 Toast.makeText(this@HomeActivity, "پروفایل آپدیت شد", Toast.LENGTH_SHORT).show()
@@ -380,8 +457,9 @@ class HomeActivity : AppCompatActivity() {
             if (res != null) {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
-                    currentUserId = extractUserIdFromToken(token)
+                    currentUserId = json.optInt("id", -1)
                     binding.etFullName.setText(json.getString("full_name"))
+                    binding.etBio.setText(json.optString("bio", ""))
                     binding.tvUsernameProfile.text = "@" + json.getString("username")
                     binding.tvEmailProfile.text = json.getString("email")
                     val picUrl = json.optString("profile_pic", "")
@@ -392,17 +470,6 @@ class HomeActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    private fun extractUserIdFromToken(token: String): Int {
-        try {
-            val parts = token.split(".")
-            if (parts.size == 3) {
-                val payload = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE))
-                return JSONObject(payload).getInt("user_id")
-            }
-        } catch (e: Exception) { }
-        return -1
     }
 
     private fun uploadProfilePic(uri: Uri) {
@@ -443,14 +510,42 @@ class HomeActivity : AppCompatActivity() {
     }
 }
 
+// دیتامدل‌ها
 data class ShopItem(val id: Int, val name: String, val desc: String, val logo: String)
+
+data class ChatListItem(val id: Int, val targetUserId: Int, val targetUsername: String, val targetPic: String, val lastMessage: String, val date: String, val unreadCount: Int)
 
 data class FeedItem(
     val id: Int, val userId: Int, val username: String, val userPic: String,
     val text: String, val media: String, val mediaType: String,
     val isLiked: Boolean, val likeCount: Int, val commentCount: Int,
-    val views: Int, val createdAt: String, val isEdited: Boolean
+    val views: Int, val createdAt: String, val isEdited: Boolean,
+    val isVip: Boolean, val badgeUrl: String, val customBg: String
 )
+
+// آداپترها
+class ChatListAdapter(private val items: List<ChatListItem>, private val onClick: (ChatListItem) -> Unit) : RecyclerView.Adapter<ChatListAdapter.ViewHolder>() {
+    class ViewHolder(val b: ItemChatListBinding) : RecyclerView.ViewHolder(b.root)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemChatListBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = items[position]
+        holder.b.tvChatUsername.text = item.targetUsername
+        holder.b.tvChatLastMessage.text = item.lastMessage
+        holder.b.tvChatDate.text = item.date
+        if (item.unreadCount > 0) {
+            holder.b.tvUnreadCount.visibility = View.VISIBLE
+            holder.b.tvUnreadCount.text = item.unreadCount.toString()
+        } else holder.b.tvUnreadCount.visibility = View.GONE
+        
+        val baseUrl = NativeLib.getBaseUrl()
+        if (item.targetPic.isNotEmpty()) {
+            Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.ic_sun).into(holder.b.imgChatUser)
+        } else holder.b.imgChatUser.setImageResource(R.drawable.ic_sun)
+        
+        holder.b.root.setOnClickListener { onClick(item) }
+    }
+    override fun getItemCount(): Int = items.size
+}
 
 class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) -> Unit) : RecyclerView.Adapter<ShopAdapter.ViewHolder>() {
     class ViewHolder(val b: ItemShopBinding) : RecyclerView.ViewHolder(b.root)
@@ -459,8 +554,6 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
         val item = items[position]
         holder.b.tvSourceName.text = item.name
         holder.b.tvSourceDesc.text = item.desc
-        
-        // مشکل کلیک روی خود دکمه نمایش جزئیات هم با این حل شد
         holder.b.root.setOnClickListener { onClick(position) }
         holder.b.btnShowDetails.setOnClickListener { onClick(position) }
         
@@ -477,7 +570,8 @@ class FeedAdapter(
     private val size: Float,
     private val onLikeClick: (Int, Int) -> Unit,
     private val onPostClick: (Int) -> Unit,
-    private val onOptionsClick: (View, FeedItem, Int) -> Unit
+    private val onOptionsClick: (View, FeedItem, Int) -> Unit,
+    private val onUserClick: (Int) -> Unit
 ) : RecyclerView.Adapter<FeedAdapter.ViewHolder>() {
 
     class ViewHolder(val b: ItemFeedPostBinding) : RecyclerView.ViewHolder(b.root)
@@ -500,36 +594,43 @@ class FeedAdapter(
         val editStatus = if (item.isEdited) " (ویرایش شده)" else ""
         holder.b.tvPostDate.text = TimeUtils.getTimeAgo(item.createdAt) + editStatus
 
+        // اعمال بک‌گراند کاستوم و تیک آبی VIP
+        val baseUrl = NativeLib.getBaseUrl()
+        if (item.isVip && item.badgeUrl.isNotEmpty()) {
+            holder.b.imgBadge.visibility = View.VISIBLE
+            Glide.with(holder.b.root.context).load(if (item.badgeUrl.startsWith("http")) item.badgeUrl else baseUrl + item.badgeUrl).into(holder.b.imgBadge)
+        } else holder.b.imgBadge.visibility = View.GONE
+
+        if (item.isVip && item.customBg.isNotEmpty()) {
+            try { holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg)) } catch(e: Exception) {}
+        }
+
         if (item.userId == currentUserId && currentUserId != -1) {
             holder.b.tvUsername.setCompoundDrawablesWithIntrinsicBounds(0, 0, android.R.drawable.ic_menu_more, 0)
             holder.b.tvUsername.setOnClickListener { onOptionsClick(it, item, position) }
         } else {
             holder.b.tvUsername.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
-            holder.b.tvUsername.setOnClickListener(null)
+            holder.b.tvUsername.setOnClickListener { onUserClick(item.userId) }
+            holder.b.imgUserPic.setOnClickListener { onUserClick(item.userId) }
         }
 
-        val baseUrl = NativeLib.getBaseUrl()
         if (item.userPic.isNotEmpty()) {
             val picUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
             Glide.with(holder.b.root.context).load(picUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgUserPic)
-        } else {
-            holder.b.imgUserPic.setImageResource(R.drawable.ic_sun)
-        }
+        } else holder.b.imgUserPic.setImageResource(R.drawable.ic_sun)
         
         if (item.media.isNotEmpty() && item.mediaType == "image") {
             val mediaUrl = if (item.media.startsWith("http")) item.media else baseUrl + item.media
             Glide.with(holder.b.root.context).load(mediaUrl).into(holder.b.imgPostMedia)
             holder.b.imgPostMedia.visibility = View.VISIBLE
-        } else {
-            holder.b.imgPostMedia.visibility = View.GONE
-        }
+        } else holder.b.imgPostMedia.visibility = View.GONE
 
         if (item.isLiked) {
             holder.b.imgLike.setColorFilter(ContextCompat.getColor(holder.b.root.context, R.color.purple))
             holder.b.tvLikeCount.setTextColor(ContextCompat.getColor(holder.b.root.context, R.color.purple))
         } else {
-            holder.b.imgLike.setColorFilter(Color.parseColor("#B3FFFFFF"))
-            holder.b.tvLikeCount.setTextColor(Color.parseColor("#B3FFFFFF"))
+            holder.b.imgLike.setColorFilter(Color.parseColor("#B3888888"))
+            holder.b.tvLikeCount.setTextColor(Color.parseColor("#B3888888"))
         }
 
         holder.b.btnLike.setOnClickListener { onLikeClick(item.id, position) }

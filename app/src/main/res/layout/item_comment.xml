@@ -16,16 +16,44 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvReplyInfo"
-            android:layout_width="wrap_content"
+        <!-- باکس نقل قول تلگرامی -->
+        <LinearLayout
+            android:id="@+id/layoutReplyQuote"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="در پاسخ به فلانی"
-            android:textColor="#5288C1"
-            android:textSize="12sp"
-            android:textStyle="italic"
+            android:orientation="horizontal"
+            android:background="#1A5288C1"
             android:visibility="gone"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginBottom="12dp">
+            
+            <View
+                android:layout_width="4dp"
+                android:layout_height="match_parent"
+                android:background="#5288C1" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="8dp">
+                
+                <TextView
+                    android:id="@+id/tvReplyUsernameQuote"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#5288C1"
+                    android:textStyle="bold"
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/tvReplyTextQuote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="12sp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -52,7 +80,6 @@
                         android:id="@+id/tvCommentUsername"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="کاربر"
                         android:textColor="?android:attr/textColorPrimary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -68,7 +95,6 @@
                     android:id="@+id/tvCommentDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="همین الان"
                     android:textColor="?android:attr/textColorSecondary"
                     android:textSize="11sp"
                     android:layout_marginTop="2dp" />
@@ -81,7 +107,6 @@
                 android:textColor="#FFD600"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:text="10"
                 android:background="#22FFD600"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
@@ -111,9 +136,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="متن نظر..."
             android:textColor="?android:attr/textColorPrimary"
-            android:textSize="14sp"
             android:lineSpacingExtra="4dp" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

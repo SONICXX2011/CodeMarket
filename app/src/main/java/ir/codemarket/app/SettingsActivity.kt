@@ -56,8 +56,7 @@ class SettingsActivity : AppCompatActivity() {
             sessionManager.saveTextSize(12f + binding.seekBarTextSize.progress)
 
             if (binding.layoutVipSettings.visibility == View.VISIBLE) {
-                val customBg = binding.etCustomBg.text.toString()
-                saveVipSettings(customBg)
+                saveVipSettings(binding.etCustomBg.text.toString())
             } else {
                 restartApp()
             }
@@ -88,7 +87,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun restartApp() {
-        Toast.makeText(this, "تنظیمات ذخیره شد", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "تنظیمات اعمال شد", Toast.LENGTH_SHORT).show()
         val intent = Intent(this, HomeActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)

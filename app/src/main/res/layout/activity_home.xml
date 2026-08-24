@@ -10,65 +10,110 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_glass_top_bar"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="16dp"
+        android:orientation="vertical"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageView
-            android:id="@+id/btnSearchIcon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@android:drawable/ic_menu_search"
-            app:tint="@android:color/white"
-            android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless" />
-
-        <EditText
-            android:id="@+id/etSearch"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/bg_glass_input"
-            android:hint="جستجوی سورس..."
-            android:textColorHint="#80FFFFFF"
-            android:textColor="@android:color/white"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="8dp"
-            android:visibility="gone"
-            android:maxLines="1"
-            android:inputType="text" />
-            
-        <View
-            android:id="@+id/spacer"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp">
 
-        <ImageView
-            android:id="@+id/btnRefresh"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@android:drawable/ic_popup_sync"
-            app:tint="@android:color/white"
-            android:layout_marginEnd="16dp"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+            <ImageView
+                android:id="@+id/btnSearchIcon"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@android:drawable/ic_menu_search"
+                app:tint="?android:attr/textColorPrimary"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless" />
 
-        <ImageView
-            android:id="@+id/btnThemeToggle"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_sun"
-            app:tint="#FFD600"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+            <EditText
+                android:id="@+id/etSearch"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_glass_input"
+                android:hint="جستجو..."
+                android:textColorHint="?android:attr/textColorSecondary"
+                android:textColor="?android:attr/textColorPrimary"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:visibility="gone"
+                android:maxLines="1"
+                android:inputType="text" />
+
+            <View
+                android:id="@+id/spacer"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/btnRefresh"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@android:drawable/ic_popup_sync"
+                app:tint="?android:attr/textColorPrimary"
+                android:layout_marginEnd="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+
+            <ImageView
+                android:id="@+id/btnThemeToggle"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_sun"
+                app:tint="#FFD600"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+        </LinearLayout>
+
+        <!-- تب‌های عمومی و شخصی (فقط در بخش خانه نشان داده می‌شود) -->
+        <LinearLayout
+            android:id="@+id/layoutHomeTabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="8dp"
+            android:weightSum="2">
+
+            <TextView
+                android:id="@+id/tabPublic"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="عمومی"
+                android:gravity="center"
+                android:textColor="#5288C1"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:padding="8dp"
+                android:background="@drawable/bg_glass_input"
+                android:layout_marginEnd="4dp" />
+
+            <TextView
+                android:id="@+id/tabPrivate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="شخصی"
+                android:gravity="center"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textSize="16sp"
+                android:padding="8dp"
+                android:background="@android:color/transparent"
+                android:layout_marginStart="4dp" />
+        </LinearLayout>
     </LinearLayout>
 
+    <!-- کانتینر اصلی خانه که شامل فید عمومی و چت‌های شخصی است -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/topBar"
-        app:layout_constraintBottom_toTopOf="@id/bottom_nav"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavContainer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -84,18 +129,28 @@
                 android:clipToPadding="false"
                 android:paddingBottom="80dp" />
 
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerChats"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingBottom="80dp"
+                android:visibility="gone" />
+
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/btnAddPost"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
-                android:layout_margin="24dp"
+                android:layout_margin="16dp"
+                android:layout_marginBottom="80dp"
                 android:src="@android:drawable/ic_menu_add"
                 app:tint="@android:color/white"
-                app:backgroundTint="@color/purple" />
+                app:backgroundTint="#5288C1" />
         </FrameLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
+    <!-- کانتینرهای صفحات دیگر -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="0dp"
@@ -103,11 +158,10 @@
         android:visibility="gone"
         android:padding="8dp"
         app:layout_constraintTop_toBottomOf="@id/topBar"
-        app:layout_constraintBottom_toTopOf="@id/bottom_nav"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavContainer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- بخش آپلود با TextInputLayout های گرافیکی -->
     <ScrollView
         android:id="@+id/uploadContainer"
         android:layout_width="0dp"
@@ -115,7 +169,7 @@
         android:visibility="gone"
         android:padding="16dp"
         app:layout_constraintTop_toBottomOf="@id/topBar"
-        app:layout_constraintBottom_toTopOf="@id/bottom_nav"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavContainer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -128,7 +182,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="آپلود سورس جدید"
-                android:textColor="@android:color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="24dp" />
@@ -139,8 +193,9 @@
                 android:layout_height="55dp"
                 android:text="انتخاب لوگو سورس"
                 app:cornerRadius="16dp"
-                android:backgroundTint="#22FFFFFF"
-                app:strokeColor="#55FFFFFF"
+                android:backgroundTint="#1A888888"
+                android:textColor="?android:attr/textColorPrimary"
+                app:strokeColor="#5288C1"
                 app:strokeWidth="1dp" />
 
             <com.google.android.material.button.MaterialButton
@@ -151,8 +206,9 @@
                 app:cornerRadius="16dp"
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="16dp"
-                android:backgroundTint="#22FFFFFF"
-                app:strokeColor="#55FFFFFF"
+                android:backgroundTint="#1A888888"
+                android:textColor="?android:attr/textColorPrimary"
+                app:strokeColor="#5288C1"
                 app:strokeWidth="1dp" />
 
             <com.google.android.material.textfield.TextInputLayout
@@ -161,7 +217,7 @@
                 android:hint="نام سورس"
                 app:hintTextColor="#5288C1"
                 app:boxStrokeColor="#5288C1"
-                app:boxBackgroundColor="#1AFFFFFF"
+                app:boxBackgroundColor="#1A888888"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
@@ -171,7 +227,7 @@
                     android:id="@+id/etSourceName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@android:color/white" />
+                    android:textColor="?android:attr/textColorPrimary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -181,7 +237,7 @@
                 android:hint="توضیحات کامل (پشتیبانی از مارک‌داون)"
                 app:hintTextColor="#5288C1"
                 app:boxStrokeColor="#5288C1"
-                app:boxBackgroundColor="#1AFFFFFF"
+                app:boxBackgroundColor="#1A888888"
                 app:boxCornerRadiusTopStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusBottomStart="12dp"
@@ -193,7 +249,7 @@
                     android:layout_height="wrap_content"
                     android:minLines="5"
                     android:gravity="top|start"
-                    android:textColor="@android:color/white"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:inputType="textMultiLine" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -208,26 +264,26 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- بخش پروفایل تلگرامی -->
     <ScrollView
         android:id="@+id/profileContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bottom_nav"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavContainer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:paddingBottom="40dp">
 
             <View
                 android:id="@+id/profileHeader"
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
-                android:background="@color/purple"
+                android:background="#5288C1"
                 app:layout_constraintTop_toTopOf="parent" />
 
             <de.hdodenhof.circleimageview.CircleImageView
@@ -236,7 +292,7 @@
                 android:layout_height="120dp"
                 android:src="@drawable/ic_sun"
                 app:civ_border_width="4dp"
-                app:civ_border_color="@android:color/white"
+                app:civ_border_color="?android:attr/colorBackground"
                 app:layout_constraintTop_toBottomOf="@id/profileHeader"
                 app:layout_constraintBottom_toBottomOf="@id/profileHeader"
                 app:layout_constraintStart_toStartOf="parent"
@@ -247,7 +303,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="User"
-                android:textColor="@android:color/white"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 app:layout_constraintTop_toBottomOf="@id/imgProfile"
@@ -259,7 +315,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="user@mail.com"
-                android:textColor="#B3FFFFFF"
+                android:textColor="?android:attr/textColorSecondary"
                 app:layout_constraintTop_toBottomOf="@id/tvUsernameProfile"
                 app:layout_constraintStart_toStartOf="@id/tvUsernameProfile" />
 
@@ -274,9 +330,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="تغییر نام و نام خانوادگی"
-                    app:hintTextColor="@color/purple"
-                    app:boxStrokeColor="@color/purple"
-                    app:boxBackgroundColor="#1AFFFFFF"
+                    app:hintTextColor="#5288C1"
+                    app:boxStrokeColor="#5288C1"
+                    app:boxBackgroundColor="#1A888888"
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
@@ -286,7 +342,29 @@
                         android:id="@+id/etFullName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="@android:color/white" />
+                        android:textColor="?android:attr/textColorPrimary" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:hint="بیوگرافی (درباره من)"
+                    app:hintTextColor="#5288C1"
+                    app:boxStrokeColor="#5288C1"
+                    app:boxBackgroundColor="#1A888888"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etBio"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minLines="3"
+                        android:gravity="top|start"
+                        android:textColor="?android:attr/textColorPrimary" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
@@ -294,18 +372,18 @@
                     android:layout_width="match_parent"
                     android:layout_height="55dp"
                     android:text="تغییر عکس پروفایل"
-                    android:backgroundTint="#22FFFFFF"
-                    app:strokeColor="#55FFFFFF"
+                    android:backgroundTint="#1A888888"
+                    android:textColor="?android:attr/textColorPrimary"
+                    app:strokeColor="#5288C1"
                     app:strokeWidth="1dp"
                     app:cornerRadius="16dp"
                     android:layout_marginTop="16dp" />
 
-                <!-- اضافه شدن دکمه شخصی‌سازی و تنظیمات -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSettings"
                     android:layout_width="match_parent"
                     android:layout_height="55dp"
-                    android:text="شخصی‌سازی برنامه"
+                    android:text="شخصی‌سازی ظاهری"
                     app:backgroundTint="#5288C1"
                     app:cornerRadius="16dp"
                     android:layout_marginTop="16dp" />
@@ -316,21 +394,36 @@
                     android:layout_height="55dp"
                     android:text="تایید تغییرات"
                     app:cornerRadius="16dp"
+                    app:backgroundTint="#10b981"
                     android:layout_marginTop="24dp" />
             </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottom_nav"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/bottomNavContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#17212B"
-        app:menu="@menu/bottom_nav_menu"
-        app:itemTextColor="@android:color/white"
-        app:itemIconTint="#FFFFFF"
-        app:labelVisibilityMode="labeled"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="24dp"
+        app:cardBackgroundColor="?android:attr/colorBackground"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottom_nav"
+            android:layout_width="match_parent"
+            android:layout_height="65dp"
+            android:background="@android:color/transparent"
+            app:menu="@menu/bottom_nav_menu"
+            app:itemTextColor="#5288C1"
+            app:itemIconTint="#5288C1"
+            app:itemActiveIndicatorStyle="@null"
+            app:labelVisibilityMode="labeled" />
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

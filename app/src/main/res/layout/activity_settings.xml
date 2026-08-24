@@ -17,74 +17,101 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="شخصی‌سازی برنامه"
+        android:text="شخصی‌سازی ظاهری"
         android:textColor="?android:attr/textColorPrimary"
-        android:textSize="24sp"
+        android:textSize="26sp"
         android:textStyle="bold"
         android:layout_marginTop="24dp"
         android:layout_marginBottom="32dp" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="تم برنامه"
-        android:textColor="?android:attr/textColorSecondary"
-        android:textSize="16sp"
-        android:layout_marginBottom="12dp" />
-
-    <RadioGroup
-        android:id="@+id/rgTheme"
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="#1A888888"
-        android:padding="8dp">
+        app:cardBackgroundColor="#1A888888"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        android:layout_marginBottom="24dp">
+        
+        <LinearLayout 
+            android:layout_width="match_parent" 
+            android:layout_height="wrap_content" 
+            android:orientation="vertical" 
+            android:padding="16dp">
+            
+            <TextView 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:text="تم برنامه" 
+                android:textColor="?android:attr/textColorSecondary" 
+                android:textSize="16sp" 
+                android:layout_marginBottom="12dp" />
+                
+            <RadioGroup 
+                android:id="@+id/rgTheme" 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
+                android:orientation="horizontal">
+                
+                <RadioButton 
+                    android:id="@+id/rbLight" 
+                    android:layout_width="0dp" 
+                    android:layout_weight="1" 
+                    android:layout_height="wrap_content" 
+                    android:text="روشن" 
+                    android:textColor="?android:attr/textColorPrimary" 
+                    android:buttonTint="#5288C1" />
+                    
+                <RadioButton 
+                    android:id="@+id/rbDark" 
+                    android:layout_width="0dp" 
+                    android:layout_weight="1" 
+                    android:layout_height="wrap_content" 
+                    android:text="تاریک" 
+                    android:textColor="?android:attr/textColorPrimary" 
+                    android:buttonTint="#5288C1" />
+            </RadioGroup>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
-        <RadioButton
-            android:id="@+id/rbLight"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:text="روشن"
-            android:textColor="?android:attr/textColorPrimary"
-            android:buttonTint="#5288C1" />
-
-        <RadioButton
-            android:id="@+id/rbDark"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:text="تاریک"
-            android:textColor="?android:attr/textColorPrimary"
-            android:buttonTint="#5288C1" />
-    </RadioGroup>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="اندازه متن پست‌ها"
-        android:textColor="?android:attr/textColorSecondary"
-        android:textSize="16sp"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="12dp" />
-
-    <SeekBar
-        android:id="@+id/seekBarTextSize"
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:max="14"
-        android:progress="0"
-        android:progressTint="#5288C1"
-        android:thumbTint="#5288C1" />
-
-    <TextView
-        android:id="@+id/tvTextSizePreview"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="نمونه اندازه متن"
-        android:textColor="?android:attr/textColorPrimary"
-        android:layout_marginTop="16dp"
-        android:gravity="center" />
+        app:cardBackgroundColor="#1A888888"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp">
+        
+        <LinearLayout 
+            android:layout_width="match_parent" 
+            android:layout_height="wrap_content" 
+            android:orientation="vertical" 
+            android:padding="16dp">
+            
+            <TextView 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content" 
+                android:text="اندازه متن پست‌ها" 
+                android:textColor="?android:attr/textColorSecondary" 
+                android:textSize="16sp" 
+                android:layout_marginBottom="12dp" />
+                
+            <SeekBar 
+                android:id="@+id/seekBarTextSize" 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
+                android:max="14" 
+                android:progressTint="#5288C1" 
+                android:thumbTint="#5288C1" />
+                
+            <TextView 
+                android:id="@+id/tvTextSizePreview" 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
+                android:text="متن تستی برای مشاهده تغییرات" 
+                android:textColor="?android:attr/textColorPrimary" 
+                android:layout_marginTop="16dp" 
+                android:gravity="center" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
     <LinearLayout
         android:id="@+id/layoutVipSettings"
@@ -92,40 +119,53 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:visibility="gone"
-        android:layout_marginTop="32dp">
+        android:layout_marginTop="24dp"
+        android:background="@drawable/bg_circle_glass"
+        android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="تنظیمات ویژه (VIP)"
-            android:textColor="#FFD600"
-            android:textSize="16sp"
-            android:textStyle="bold"
+        <TextView 
+            android:layout_width="wrap_content" 
+            android:layout_height="wrap_content" 
+            android:text="تنظیمات ویژه (VIP)" 
+            android:textColor="#FFD600" 
+            android:textSize="16sp" 
+            android:textStyle="bold" 
             android:layout_marginBottom="12dp" />
+            
+        <com.google.android.material.textfield.TextInputLayout 
+            android:layout_width="match_parent" 
+            android:layout_height="wrap_content" 
+            android:hint="رنگ پس‌زمینه پیام‌های شما (مثال: #1A5288C1)" 
+            app:hintTextColor="#FFD600" 
+            app:boxStrokeColor="#FFD600" 
+            app:boxBackgroundColor="#1A888888"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="رنگ پس‌زمینه پیام‌های شما (مثال: #33FF0000)"
-            app:hintTextColor="#FFD600"
-            app:boxStrokeColor="#FFD600"
-            app:boxBackgroundColor="#1A888888">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etCustomBg"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+            <com.google.android.material.textfield.TextInputEditText 
+                android:id="@+id/etCustomBg" 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
                 android:textColor="?android:attr/textColorPrimary" />
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
+
+    <!-- این نما فضای خالی باقی‌مانده رو پر میکنه تا دکمه بره پایین صفحه -->
+    <View 
+        android:layout_width="0dp" 
+        android:layout_height="0dp" 
+        android:layout_weight="1" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSaveSettings"
         android:layout_width="match_parent"
         android:layout_height="55dp"
-        android:layout_marginTop="48dp"
         android:text="ذخیره تنظیمات"
+        android:textSize="16sp"
+        android:textStyle="bold"
         app:cornerRadius="16dp"
         app:backgroundTint="#5288C1" />
-
+        
 </LinearLayout>
