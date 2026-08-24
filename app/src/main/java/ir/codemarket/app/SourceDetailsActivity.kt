@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import io.noties.markwon.Markwon
 import ir.codemarket.app.databinding.ActivitySourceDetailsBinding
 import ir.codemarket.app.databinding.ItemCommentBinding
@@ -439,21 +440,22 @@ class CommentsAdapter(
             holder.b.imgBadge.visibility = View.GONE
         }
 
-        // >>> حل ریشه‌ای باگ گرافیک مستطیلی کثیف در نظرات فروشگاه <<<
         val typedValue = TypedValue()
         holder.b.root.context.theme.resolveAttribute(android.R.attr.colorBackground, typedValue, true)
         
-        if (item.isVip && item.customBg.isNotEmpty()) {
-            try { 
-                holder.b.cardComment.setCardBackgroundColor(Color.parseColor(item.customBg))
-                holder.b.cardComment.strokeWidth = 0 // پاک کردن خطوط سایه
-            } catch(e: Exception) {
+        if (holder.b.cardComment is MaterialCardView) {
+            if (item.isVip && item.customBg.isNotEmpty()) {
+                try { 
+                    holder.b.cardComment.setCardBackgroundColor(Color.parseColor(item.customBg))
+                    (holder.b.cardComment as MaterialCardView).strokeWidth = 0 
+                } catch(e: Exception) {
+                    holder.b.cardComment.setCardBackgroundColor(typedValue.data)
+                    (holder.b.cardComment as MaterialCardView).strokeWidth = 2
+                }
+            } else {
                 holder.b.cardComment.setCardBackgroundColor(typedValue.data)
-                holder.b.cardComment.strokeWidth = 2
+                (holder.b.cardComment as MaterialCardView).strokeWidth = 2
             }
-        } else {
-            holder.b.cardComment.setCardBackgroundColor(typedValue.data)
-            holder.b.cardComment.strokeWidth = 2
         }
     }
     

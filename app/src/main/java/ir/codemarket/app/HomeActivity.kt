@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.android.material.card.MaterialCardView
 import io.noties.markwon.Markwon
 import ir.codemarket.app.databinding.ActivityHomeBinding
 import ir.codemarket.app.databinding.ItemChatListBinding
@@ -619,17 +620,12 @@ class ChatListAdapter(private val items: List<ChatListItem>, private val onClick
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemChatListBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.b.tvChatUsername.text = item.targetUsername
-        holder.b.tvChatLastMessage.text = item.lastMessage
-        holder.b.tvChatDate.text = item.date
+        holder.b.tvChatUsername.text = item.targetUsername; holder.b.tvChatLastMessage.text = item.lastMessage; holder.b.tvChatDate.text = item.date
         holder.b.tvUnreadCount.visibility = if (item.unreadCount > 0) View.VISIBLE else View.GONE
         holder.b.tvUnreadCount.text = item.unreadCount.toString()
         val baseUrl = NativeLib.getBaseUrl()
-        if (item.targetPic.isNotEmpty()) {
-            Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.ic_sun).into(holder.b.imgChatUser)
-        } else {
-            holder.b.imgChatUser.setImageResource(R.drawable.ic_sun)
-        }
+        if (item.targetPic.isNotEmpty()) Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.ic_sun).into(holder.b.imgChatUser)
+        else holder.b.imgChatUser.setImageResource(R.drawable.ic_sun)
         holder.b.root.setOnClickListener { onClick(item) }
     }
     override fun getItemCount(): Int = items.size
@@ -689,21 +685,23 @@ class FeedAdapter(
             holder.b.imgBadge.visibility = View.GONE
         }
 
-        // >>> منطق رفع باگ مستطیل سایه‌دار برای پست‌های VIP <<<
+        // استفاده از کلاس MaterialCardView برای صفر کردن StrokeWidth
         val typedValue = TypedValue()
         holder.b.root.context.theme.resolveAttribute(android.R.attr.colorBackground, typedValue, true)
         
-        if (item.isVip && item.customBg.isNotEmpty()) {
-            try { 
-                holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg))
-                holder.b.cardPost.strokeWidth = 0 // حذف خط دور کارت
-            } catch(e: Exception) {
+        if (holder.b.cardPost is MaterialCardView) {
+            if (item.isVip && item.customBg.isNotEmpty()) {
+                try { 
+                    holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg))
+                    (holder.b.cardPost as MaterialCardView).strokeWidth = 0 
+                } catch(e: Exception) {
+                    holder.b.cardPost.setCardBackgroundColor(typedValue.data)
+                    (holder.b.cardPost as MaterialCardView).strokeWidth = 2
+                }
+            } else {
                 holder.b.cardPost.setCardBackgroundColor(typedValue.data)
-                holder.b.cardPost.strokeWidth = 2
+                (holder.b.cardPost as MaterialCardView).strokeWidth = 2
             }
-        } else {
-            holder.b.cardPost.setCardBackgroundColor(typedValue.data)
-            holder.b.cardPost.strokeWidth = 2
         }
 
         if (item.userId == currentUserId && currentUserId != -1) {
