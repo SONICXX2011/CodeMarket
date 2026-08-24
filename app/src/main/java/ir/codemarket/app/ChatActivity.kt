@@ -202,6 +202,7 @@ class ChatActivity : AppCompatActivity() {
         binding.etMessage.requestFocus()
     }
 
+    // رفع کامل ارور Resource$NotFoundException با برداشتن اتریبیوت معیوب
     private fun showMessageOptions(msg: ChatMessageItem, position: Int) {
         try {
             val bottomSheet = BottomSheetDialog(this)
@@ -229,7 +230,8 @@ class ChatActivity : AppCompatActivity() {
                     orientation = LinearLayout.HORIZONTAL
                     setPadding(20, 30, 20, 30)
                     gravity = Gravity.CENTER_VERTICAL
-                    background = ContextCompat.getDrawable(this@ChatActivity, android.R.attr.selectableItemBackground)
+                    // استفاده از رنگ پس‌زمینه ایمن برای جلوگیری از کرش
+                    setBackgroundColor(Color.TRANSPARENT)
                     setOnClickListener { bottomSheet.dismiss(); onClick() }
                 }
                 val icon = ImageView(this).apply {
@@ -270,7 +272,6 @@ class ChatActivity : AppCompatActivity() {
             bottomSheet.show()
             
         } catch (e: Exception) {
-            // یکپارچگی کامل با سیستم Logger خودت
             Logger.logEvent("BottomSheetError", e.stackTraceToString())
             Toast.makeText(this, "خطا در نمایش گزینه‌ها", Toast.LENGTH_SHORT).show()
         }
@@ -314,7 +315,7 @@ class ChatActivity : AppCompatActivity() {
                                 chatAdapter.notifyItemChanged(position)
                             }
                         } catch (e: Exception) {
-                            Logger.logEvent("EditMessageNetworkError", e.stackTraceToString())
+                            Logger.logEvent("EditMessageError", e.stackTraceToString())
                         }
                     }
                 }

@@ -3,6 +3,7 @@ package ir.codemarket.app
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.animation.AnimationUtils
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import ir.codemarket.app.databinding.ActivityLoginBinding
@@ -21,18 +22,29 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         sessionManager = SessionManager(this)
-        
+
+        // بررسی ماندگاری لاگین: اگر توکن معتبر باشد، کاربر اصلاً صفحه لاگین را نمی‌بیند
+        if (!sessionManager.fetchAuthToken().isNullOrEmpty()) {
+            startActivity(Intent(this, HomeActivity::class.java))
+            finish()
+            return
+        }
+
         if (sessionManager.isDarkMode()) {
             setTheme(R.style.Theme_CodeMarket_Dark)
         } else {
             setTheme(R.style.Theme_CodeMarket_Light)
         }
-        
+
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // انیمیشن نرم ورود عناصر صفحه
+        val fadeIn = AnimationUtils.loadAnimation(this, android.R.anim.fade_in).apply { duration = 800 }
+        binding.root.startAnimation(fadeIn)
+
         updateThemeIcon()
-        
+
         binding.btnThemeToggle.setOnClickListener {
             sessionManager.saveThemeMode(!sessionManager.isDarkMode())
             recreate()
@@ -41,40 +53,51 @@ class LoginActivity : AppCompatActivity() {
         binding.btnLogin.setOnClickListener {
             val username = binding.etUsername.text.toString()
             val password = binding.etPassword.text.toString()
-            
+
             if (username.isNotEmpty() && password.isNotEmpty()) {
-                
                 binding.btnLogin.visibility = View.GONE
                 binding.progressBar.visibility = View.VISIBLE
-                
+
                 CoroutineScope(Dispatchers.Main).launch {
-                    val payload = NativeLib.buildLoginPayload(username, password)
-                    val (response, code) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/auth/login", payload) }
-                    
-                    binding.btnLogin.visibility = View.VISIBLE
-                    binding.progressBar.visibility = View.GONE
-                    
-                    if (response != null) {
-                        val json = JSONObject(response)
-                        if (json.getBoolean("success")) {
-                            sessionManager.saveAuthToken(json.getString("token"))
-                            sessionManager.saveUsername(json.getString("username"))
-                            startActivity(Intent(this@LoginActivity, HomeActivity::class.java))
-                            finish()
+                    try {
+                        val payload = NativeLib.buildLoginPayload(username, password)
+                        val (response, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/auth/login", payload) }
+
+                        binding.btnLogin.visibility = View.VISIBLE
+                        binding.progressBar.visibility = View.GONE
+
+                        if (response != null) {
+                            val json = JSONObject(response)
+                            if (json.getBoolean("success")) {
+                                sessionManager.saveAuthToken(json.getString("token"))
+                                sessionManager.saveUsername(json.getString("username"))
+                                startActivity(Intent(this@LoginActivity, HomeActivity::class.java))
+                                finish()
+                            } else {
+                                binding.tvError.text = json.optString("error", "نام کاربری یا رمز عبور اشتباه است")
+                                binding.tvError.visibility = View.VISIBLE
+                            }
                         } else {
-                            binding.tvError.text = json.optString("error", "خطای ناشناخته")
+                            binding.tvError.text = "ارتباط با سرور برقرار نشد"
                             binding.tvError.visibility = View.VISIBLE
                         }
-                    } else {
-                        binding.tvError.text = "ارتباط با سرور برقرار نشد"
+                    } catch (e: Exception) {
+                        binding.btnLogin.visibility = View.VISIBLE
+                        binding.progressBar.visibility = View.GONE
+                        binding.tvError.text = "خطای شبکه"
                         binding.tvError.visibility = View.VISIBLE
+                        Logger.logEvent("LoginError", e.stackTraceToString())
                     }
                 }
+            } else {
+                binding.tvError.text = "لطفاً تمامی فیلدها را پر کنید"
+                binding.tvError.visibility = View.VISIBLE
             }
         }
-        
-        binding.tvGoRegister.setOnClickListener { 
-            startActivity(Intent(this, RegisterActivity::class.java)) 
+
+        binding.tvGoRegister.setOnClickListener {
+            startActivity(Intent(this, RegisterActivity::class.java))
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
     }
 
