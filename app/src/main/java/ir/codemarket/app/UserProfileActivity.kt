@@ -37,17 +37,20 @@ class UserProfileActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         targetUserId = intent.getIntExtra("user_id", -1)
-        if (targetUserId == -1) { finish(); return }
+        if (targetUserId == -1) { 
+            finish()
+            return 
+        }
 
-        binding.btnBackProfile.setOnClickListener { finish() }
+        binding.btnBackProfile.setOnClickListener { 
+            finish() 
+        }
 
-        // --- کلیک روی ارسال پیام و رفتن به پیوی با انیمیشن ---
         binding.btnSendMessage.setOnClickListener {
             val intent = Intent(this, ChatActivity::class.java)
             intent.putExtra("target_id", targetUserId)
             intent.putExtra("target_username", targetUsername)
             startActivity(intent)
-            // انیمیشن محو شدن برای حس روانی بهتر کاربر
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
 
@@ -55,7 +58,7 @@ class UserProfileActivity : AppCompatActivity() {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("UserID", targetUsername)
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(this, "آیدی $targetUsername کپی شد", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "آیدی کپی شد", Toast.LENGTH_SHORT).show()
         }
 
         loadUserData()
@@ -64,16 +67,20 @@ class UserProfileActivity : AppCompatActivity() {
     private fun loadUserData() {
         val token = sessionManager.fetchAuthToken() ?: return
         CoroutineScope(Dispatchers.Main).launch {
-            val (res, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/users/$targetUserId", token) }
+            val (res, _) = withContext(Dispatchers.IO) { 
+                ApiClient.getRequest("/api/users/$targetUserId", token) 
+            }
             if (res != null) {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
                     targetUsername = json.getString("username")
                     binding.tvProfileName.text = json.getString("full_name")
-                    binding.tvProfileUsername.text = "@$targetUsername"
+                    binding.tvProfileUsername.text = "@" + targetUsername
                     
                     val bio = json.optString("bio", "")
-                    if (bio.isNotEmpty()) binding.tvProfileBio.text = bio
+                    if (bio.isNotEmpty()) {
+                        binding.tvProfileBio.text = bio
+                    }
                     
                     val picUrl = json.optString("profile_pic", "")
                     if (picUrl.isNotEmpty()) {
