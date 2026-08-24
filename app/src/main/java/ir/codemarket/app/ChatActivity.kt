@@ -7,20 +7,28 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.TextPaint
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.text.util.Linkify
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import io.noties.markwon.Markwon
 import ir.codemarket.app.databinding.ActivityChatBinding
 import ir.codemarket.app.databinding.ItemChatMessageBinding
@@ -33,6 +41,7 @@ import org.json.JSONObject
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.regex.Pattern
 
 class ChatActivity : AppCompatActivity() {
 
@@ -101,10 +110,9 @@ class ChatActivity : AppCompatActivity() {
                 startActivity(intent)
             }
         }
-
         binding.tvChatTargetName.setOnClickListener { binding.imgChatTargetPic.performClick() }
 
-        MarkdownUtils.applyMarkdownShortcuts(binding.etMessage)
+        setupMessageInputFormatting()
 
         binding.btnAttach.setOnClickListener { pickMedia.launch(arrayOf("image/*", "video/*", "audio/*")) }
         
@@ -130,6 +138,35 @@ class ChatActivity : AppCompatActivity() {
         loadMessages()
     }
 
+    // --- افزودن منوی فرمت‌دهی (اسپویل، برجسته، لینک) با نگه‌داشتن انگشت روی متن قبل از ارسال ---
+    private fun setupMessageInputFormatting() {
+        binding.etMessage.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
+            override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
+                menu.add(0, 1, 0, "اسپویل (سانسور)").setIcon(android.R.drawable.ic_menu_view)
+                menu.add(0, 2, 0, "برجسته (Bold)").setIcon(android.R.drawable.ic_menu_edit)
+                menu.add(0, 3, 0, "خط‌خورده (Strike)").setIcon(android.R.drawable.ic_menu_delete)
+                menu.add(0, 4, 0, "لینک دادن").setIcon(android.R.drawable.ic_menu_share)
+                return true
+            }
+            override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean = false
+            override fun onActionItemClicked(mode: android.view.ActionMode, item: android.view.MenuItem): Boolean {
+                val start = binding.etMessage.selectionStart
+                val end = binding.etMessage.selectionEnd
+                if (start < 0 || end < 0) return false
+                val text = binding.etMessage.text
+                when (item.itemId) {
+                    1 -> { text.insert(end, "||"); text.insert(start, "||") }
+                    2 -> { text.insert(end, "**"); text.insert(start, "**") }
+                    3 -> { text.insert(end, "~~"); text.insert(start, "~~") }
+                    4 -> { text.insert(end, "]()"); text.insert(start, "[") }
+                }
+                mode.finish()
+                return true
+            }
+            override fun onDestroyActionMode(mode: android.view.ActionMode?) {}
+        }
+    }
+
     private fun extractCurrentUserId() {
         val token = sessionManager.fetchAuthToken() ?: return
         try {
@@ -148,7 +185,7 @@ class ChatActivity : AppCompatActivity() {
             sessionManager.getTextSize(), 
             currentUserId,
             onReplyClick = { msg -> startReply(msg) },
-            onMessageLongClick = { view, msg, position -> showMessageOptions(view, msg, position) }
+            onMessageLongClick = { msg, position -> showMessageOptions(msg, position) }
         )
         val layoutManager = LinearLayoutManager(this)
         layoutManager.stackFromEnd = true
@@ -164,31 +201,71 @@ class ChatActivity : AppCompatActivity() {
         binding.etMessage.requestFocus()
     }
 
-    private fun showMessageOptions(view: View, msg: ChatMessageItem, position: Int) {
-        val popup = PopupMenu(this, view)
-        popup.menu.add("پاسخ دادن (Reply)")
-        if (msg.text.isNotEmpty()) popup.menu.add("کپی متن")
+    // --- منوی شیشه‌ای، فوق گرافیکی و گوشه‌گرد از پایین (BottomSheet) ---
+    private fun showMessageOptions(msg: ChatMessageItem, position: Int) {
+        val bottomSheet = BottomSheetDialog(this)
+        
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 50, 40, 50)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Color.parseColor(if (sessionManager.isDarkMode()) "#1A1A2E" else "#F3F4F6"))
+                cornerRadii = floatArrayOf(80f, 80f, 80f, 80f, 0f, 0f, 0f, 0f) // گوشه‌های کاملاً گرد و نرم
+            }
+        }
+
+        val title = android.widget.TextView(this).apply {
+            text = "گزینه‌های پیام"
+            textSize = 14f
+            setTextColor(Color.parseColor("#888888"))
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 40)
+        }
+        container.addView(title)
+
+        fun addOption(titleStr: String, iconRes: Int, onClick: () -> Unit) {
+            val itemLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(20, 30, 20, 30)
+                gravity = Gravity.CENTER_VERTICAL
+                background = ContextCompat.getDrawable(this@ChatActivity, android.R.attr.selectableItemBackground)
+                setOnClickListener { bottomSheet.dismiss(); onClick() }
+            }
+            val icon = ImageView(this).apply {
+                setImageResource(iconRes)
+                setColorFilter(Color.parseColor("#5288C1"))
+                layoutParams = LinearLayout.LayoutParams(64, 64)
+            }
+            val textV = android.widget.TextView(this).apply {
+                text = titleStr
+                textSize = 16f
+                setTextColor(Color.parseColor(if (sessionManager.isDarkMode()) "#FFFFFF" else "#000000"))
+                setPadding(40, 0, 40, 0)
+                setTypeface(null, android.graphics.Typeface.BOLD)
+            }
+            itemLayout.addView(icon)
+            itemLayout.addView(textV)
+            container.addView(itemLayout)
+        }
+
+        addOption("پاسخ دادن (نقل قول)", android.R.drawable.ic_menu_revert) { startReply(msg) }
+        
+        if (msg.text.isNotEmpty()) {
+            addOption("کپی کردن متن", android.R.drawable.ic_menu_edit) {
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("Message", msg.text))
+                Toast.makeText(this, "متن کپی شد", Toast.LENGTH_SHORT).show()
+            }
+        }
         
         if (msg.senderId == currentUserId) {
-            if (msg.text.isNotEmpty()) popup.menu.add("ویرایش")
-            popup.menu.add("حذف")
+            if (msg.text.isNotEmpty()) addOption("ویرایش پیام", android.R.drawable.ic_menu_edit) { editMessage(msg, position) }
+            addOption("حذف پیام", android.R.drawable.ic_menu_delete) { deleteMessage(msg.id, position) }
         }
-        
-        popup.setOnMenuItemClickListener { item ->
-            when (item.title) {
-                "پاسخ دادن (Reply)" -> startReply(msg)
-                "کپی متن" -> {
-                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    val clip = ClipData.newPlainText("Message Text", msg.text)
-                    clipboard.setPrimaryClip(clip)
-                    Toast.makeText(this, "متن پیام کپی شد", Toast.LENGTH_SHORT).show()
-                }
-                "ویرایش" -> editMessage(msg, position)
-                "حذف" -> deleteMessage(msg.id, position)
-            }
-            true
-        }
-        popup.show()
+
+        bottomSheet.setContentView(container)
+        (container.parent as View).setBackgroundColor(Color.TRANSPARENT)
+        bottomSheet.show()
     }
 
     private fun deleteMessage(msgId: Int, position: Int) {
@@ -236,32 +313,21 @@ class ChatActivity : AppCompatActivity() {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
                     val arr = json.getJSONArray("messages")
-                    parseMessages(arr)
+                    messagesList.clear()
+                    for (i in 0 until arr.length()) {
+                        val c = arr.getJSONObject(i)
+                        messagesList.add(ChatMessageItem(
+                            c.optInt("id", 0), c.optInt("sender_id", -1), c.optString("text", ""), 
+                            c.optString("media", ""), c.optString("media_type", ""), c.optInt("reply_to_id", -1),
+                            c.optString("reply_to_username", ""), c.optString("reply_to_text", ""),
+                            c.optString("date", ""), c.optBoolean("is_read", false), c.optBoolean("is_edited", false)
+                        ))
+                    }
+                    chatAdapter.notifyDataSetChanged()
                     binding.recyclerChat.scrollToPosition(messagesList.size - 1)
                 }
             }
         }
-    }
-
-    private fun parseMessages(array: JSONArray) {
-        messagesList.clear()
-        for (i in 0 until array.length()) {
-            val c = array.getJSONObject(i)
-            messagesList.add(ChatMessageItem(
-                c.optInt("id", 0), 
-                c.optInt("sender_id", -1), 
-                c.optString("text", ""), 
-                c.optString("media", ""),
-                c.optString("media_type", ""),
-                c.optInt("reply_to_id", -1),
-                c.optString("reply_to_username", ""),
-                c.optString("reply_to_text", ""),
-                c.optString("date", ""),
-                c.optBoolean("is_read", false),
-                c.optBoolean("is_edited", false)
-            ))
-        }
-        chatAdapter.notifyDataSetChanged()
     }
 
     private fun sendMessage(text: String, mediaUri: Uri?) {
@@ -331,6 +397,27 @@ class ChatActivity : AppCompatActivity() {
     }
 }
 
+// --- کلاس کاستوم برای اسپویل (سانسور) کردن متن‌ها ---
+class SpoilerSpan : ClickableSpan() {
+    private var isHidden = true
+    override fun updateDrawState(ds: TextPaint) {
+        super.updateDrawState(ds)
+        if (isHidden) {
+            ds.color = Color.parseColor("#80888888") // رنگ خاکستری تیره برای سانسور
+            ds.bgColor = Color.parseColor("#80888888")
+        } else {
+            ds.bgColor = Color.TRANSPARENT // برداشتن سانسور
+        }
+        ds.isUnderlineText = false
+    }
+    override fun onClick(widget: View) {
+        if (isHidden) {
+            isHidden = false
+            widget.invalidate()
+        }
+    }
+}
+
 data class ChatMessageItem(
     val id: Int, val senderId: Int, val text: String, val media: String, val mediaType: String,
     val replyToId: Int, val replyToUsername: String, val replyToText: String, val date: String, val isRead: Boolean, val isEdited: Boolean
@@ -342,7 +429,7 @@ class ChatMessagesAdapter(
     private val size: Float, 
     private val currentUserId: Int,
     private val onReplyClick: (ChatMessageItem) -> Unit,
-    private val onMessageLongClick: (View, ChatMessageItem, Int) -> Unit
+    private val onMessageLongClick: (ChatMessageItem, Int) -> Unit
 ) : RecyclerView.Adapter<ChatMessagesAdapter.ViewHolder>() {
     
     class ViewHolder(val b: ItemChatMessageBinding) : RecyclerView.ViewHolder(b.root)
@@ -367,8 +454,21 @@ class ChatMessagesAdapter(
         if (item.text.isNotEmpty()) {
             holder.b.tvMessageText.visibility = View.VISIBLE
             holder.b.tvMessageText.textSize = size
-            MarkdownUtils.setMarkdownText(markwon, holder.b.tvMessageText, item.text)
-            // استفاده از سیستم بومی اندروید برای قابل کلیک شدن لینک‌ها و شماره‌ها و ایمیل‌ها
+            
+            // پردازش متن برای مارک‌داون و اسپویلر
+            val spanned = markwon.toMarkdown(item.text) as SpannableStringBuilder
+            val matcher = Pattern.compile("\\|\\|(.*?)\\|\\|").matcher(spanned.toString())
+            var offset = 0
+            while (matcher.find()) {
+                val start = matcher.start() - offset
+                val end = matcher.end() - offset
+                val spoilText = matcher.group(1)
+                spanned.replace(start, end, spoilText)
+                spanned.setSpan(SpoilerSpan(), start, start + spoilText!!.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                offset += 4
+            }
+            holder.b.tvMessageText.text = spanned
+            holder.b.tvMessageText.movementMethod = LinkMovementMethod.getInstance()
             Linkify.addLinks(holder.b.tvMessageText, Linkify.ALL)
         } else {
             holder.b.tvMessageText.visibility = View.GONE
@@ -387,11 +487,9 @@ class ChatMessagesAdapter(
 
         if (item.media.isNotEmpty()) {
             val fullMediaUrl = if (item.media.startsWith("http")) item.media else NativeLib.getBaseUrl() + item.media
-            
             if (item.mediaType == "voice") {
                 holder.b.layoutVoice.visibility = View.VISIBLE
                 holder.b.layoutMedia.visibility = View.GONE
-                
                 holder.b.btnPlayVoice.setOnClickListener {
                     val intent = Intent(Intent.ACTION_VIEW)
                     intent.setDataAndType(Uri.parse(fullMediaUrl), "audio/*")
@@ -400,7 +498,6 @@ class ChatMessagesAdapter(
             } else {
                 holder.b.layoutMedia.visibility = View.VISIBLE
                 holder.b.layoutVoice.visibility = View.GONE
-                
                 Glide.with(holder.b.root.context).load(fullMediaUrl).into(holder.b.imgMessageMedia)
                 
                 if (item.mediaType == "video") {
@@ -426,17 +523,9 @@ class ChatMessagesAdapter(
             holder.b.layoutVoice.visibility = View.GONE
         }
 
+        // کلیک برای ریپلای تلگرامی و لانگ‌کلیک برای منوی گوشه‌گرد
         holder.b.cardMessageBubble.setOnClickListener { onReplyClick(item) }
-        holder.b.tvMessageText.setOnClickListener { onReplyClick(item) }
-
-        holder.b.cardMessageBubble.setOnLongClickListener {
-            onMessageLongClick(it, item, position)
-            true
-        }
-        holder.b.tvMessageText.setOnLongClickListener {
-            onMessageLongClick(it, item, position)
-            true
-        }
+        holder.b.cardMessageBubble.setOnLongClickListener { onMessageLongClick(item, position); true }
     }
     
     override fun getItemCount(): Int = items.size
