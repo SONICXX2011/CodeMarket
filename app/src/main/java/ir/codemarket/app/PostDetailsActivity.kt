@@ -366,21 +366,28 @@ class PostCommentsAdapter(
             holder.b.imgBadge.visibility = View.GONE
         }
 
-        // استفاده از کلاس MaterialCardView برای صفر کردن StrokeWidth
+        // >>> اعمال بی‌نقص رنگ VIP و حذفِ کامل سایه و حاشیه کثیف <<<
         val typedValue = TypedValue()
         holder.b.root.context.theme.resolveAttribute(android.R.attr.colorBackground, typedValue, true)
         
-        if (holder.b.cardComment is MaterialCardView) {
-            if (item.isVip && item.customBg.isNotEmpty()) {
-                try { 
-                    holder.b.cardComment.setCardBackgroundColor(Color.parseColor(item.customBg))
+        if (item.isVip && item.customBg.isNotEmpty()) {
+            try { 
+                holder.b.cardComment.setCardBackgroundColor(Color.parseColor(item.customBg))
+                holder.b.cardComment.cardElevation = 0f
+                if (holder.b.cardComment is MaterialCardView) {
                     (holder.b.cardComment as MaterialCardView).strokeWidth = 0 
-                } catch(e: Exception) {
-                    holder.b.cardComment.setCardBackgroundColor(typedValue.data)
+                }
+            } catch(e: Exception) {
+                holder.b.cardComment.setCardBackgroundColor(typedValue.data)
+                holder.b.cardComment.cardElevation = 4f
+                if (holder.b.cardComment is MaterialCardView) {
                     (holder.b.cardComment as MaterialCardView).strokeWidth = 2
                 }
-            } else {
-                holder.b.cardComment.setCardBackgroundColor(typedValue.data)
+            }
+        } else {
+            holder.b.cardComment.setCardBackgroundColor(typedValue.data)
+            holder.b.cardComment.cardElevation = 4f
+            if (holder.b.cardComment is MaterialCardView) {
                 (holder.b.cardComment as MaterialCardView).strokeWidth = 2
             }
         }

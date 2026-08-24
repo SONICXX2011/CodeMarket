@@ -620,12 +620,17 @@ class ChatListAdapter(private val items: List<ChatListItem>, private val onClick
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemChatListBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.b.tvChatUsername.text = item.targetUsername; holder.b.tvChatLastMessage.text = item.lastMessage; holder.b.tvChatDate.text = item.date
+        holder.b.tvChatUsername.text = item.targetUsername
+        holder.b.tvChatLastMessage.text = item.lastMessage
+        holder.b.tvChatDate.text = item.date
         holder.b.tvUnreadCount.visibility = if (item.unreadCount > 0) View.VISIBLE else View.GONE
         holder.b.tvUnreadCount.text = item.unreadCount.toString()
         val baseUrl = NativeLib.getBaseUrl()
-        if (item.targetPic.isNotEmpty()) Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.ic_sun).into(holder.b.imgChatUser)
-        else holder.b.imgChatUser.setImageResource(R.drawable.ic_sun)
+        if (item.targetPic.isNotEmpty()) {
+            Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.ic_sun).into(holder.b.imgChatUser)
+        } else {
+            holder.b.imgChatUser.setImageResource(R.drawable.ic_sun)
+        }
         holder.b.root.setOnClickListener { onClick(item) }
     }
     override fun getItemCount(): Int = items.size
@@ -685,21 +690,28 @@ class FeedAdapter(
             holder.b.imgBadge.visibility = View.GONE
         }
 
-        // استفاده از کلاس MaterialCardView برای صفر کردن StrokeWidth
+        // >>> اعمال بی‌نقص رنگ VIP و حذفِ کامل سایه و حاشیه کثیف <<<
         val typedValue = TypedValue()
         holder.b.root.context.theme.resolveAttribute(android.R.attr.colorBackground, typedValue, true)
         
-        if (holder.b.cardPost is MaterialCardView) {
-            if (item.isVip && item.customBg.isNotEmpty()) {
-                try { 
-                    holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg))
+        if (item.isVip && item.customBg.isNotEmpty()) {
+            try { 
+                holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg))
+                holder.b.cardPost.cardElevation = 0f
+                if (holder.b.cardPost is MaterialCardView) {
                     (holder.b.cardPost as MaterialCardView).strokeWidth = 0 
-                } catch(e: Exception) {
-                    holder.b.cardPost.setCardBackgroundColor(typedValue.data)
+                }
+            } catch(e: Exception) {
+                holder.b.cardPost.setCardBackgroundColor(typedValue.data)
+                holder.b.cardPost.cardElevation = 4f
+                if (holder.b.cardPost is MaterialCardView) {
                     (holder.b.cardPost as MaterialCardView).strokeWidth = 2
                 }
-            } else {
-                holder.b.cardPost.setCardBackgroundColor(typedValue.data)
+            }
+        } else {
+            holder.b.cardPost.setCardBackgroundColor(typedValue.data)
+            holder.b.cardPost.cardElevation = 4f
+            if (holder.b.cardPost is MaterialCardView) {
                 (holder.b.cardPost as MaterialCardView).strokeWidth = 2
             }
         }
