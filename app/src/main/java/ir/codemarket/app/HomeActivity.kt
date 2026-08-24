@@ -220,17 +220,46 @@ class HomeActivity : AppCompatActivity() {
 
     private fun setupChatsView() {
         chatListAdapter = ChatListAdapter(chatItems) { chat -> 
-            Toast.makeText(this, "چت با ${chat.targetUsername} در حال توسعه...", Toast.LENGTH_SHORT).show() 
+            val intent = Intent(this, ChatActivity::class.java)
+            intent.putExtra("target_id", chat.targetUserId)
+            intent.putExtra("target_username", chat.targetUsername)
+            startActivity(intent)
         }
         binding.recyclerChats.layoutManager = LinearLayoutManager(this)
         binding.recyclerChats.adapter = chatListAdapter
     }
 
     private fun loadChatsData() {
-        chatItems.clear()
-        chatItems.add(ChatListItem(1, 2, "ali_dev", "", "سلام خوبی؟ پروژه چطور پیش میره؟", "12:30", 2))
-        chatItems.add(ChatListItem(2, 3, "sara_coder", "", "فایل‌ها رو برات فرستادم.", "دیروز", 0))
-        chatListAdapter.notifyDataSetChanged()
+        val token = sessionManager.fetchAuthToken() ?: ""
+        CoroutineScope(Dispatchers.Main).launch {
+            val (res, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/chats", token) }
+            
+            chatItems.clear()
+            // پیام‌های ذخیره شده (همیشه اولین آیتم)
+            chatItems.add(ChatListItem(
+                id = 0, targetUserId = currentUserId, targetUsername = "پیام‌های ذخیره شده",
+                targetPic = "", lastMessage = "یادداشت‌ها و فایل‌های شخصی", date = "", unreadCount = 0
+            ))
+
+            if (res != null) {
+                val json = JSONObject(res)
+                if (json.getBoolean("success")) {
+                    val arr = json.getJSONArray("chats")
+                    for (i in 0 until arr.length()) {
+                        val c = arr.getJSONObject(i)
+                        val tId = c.getInt("target_id")
+                        if (tId != currentUserId) {
+                            chatItems.add(ChatListItem(
+                                c.getInt("id"), tId, c.getString("target_username"),
+                                c.optString("target_pic", ""), c.optString("last_message", ""),
+                                TimeUtils.getTimeAgo(c.optString("date", "")), c.optInt("unread_count", 0)
+                            ))
+                        }
+                    }
+                }
+            }
+            chatListAdapter.notifyDataSetChanged()
+        }
     }
     
     private fun setupShopView() {
@@ -582,6 +611,9 @@ class HomeActivity : AppCompatActivity() {
                         val fullPicUrl = if (picUrl.startsWith("http")) picUrl else NativeLib.getBaseUrl() + picUrl
                         Glide.with(this@HomeActivity).load(fullPicUrl).placeholder(R.drawable.ic_sun).into(binding.imgProfile)
                     }
+                    
+                    // فراخوانی لود چت‌ها بعد از گرفتن آیدی خودمون برای "پیام‌های ذخیره شده"
+                    loadChatsData()
                 }
             }
         }
@@ -626,11 +658,18 @@ class ChatListAdapter(private val items: List<ChatListItem>, private val onClick
         holder.b.tvUnreadCount.visibility = if (item.unreadCount > 0) View.VISIBLE else View.GONE
         holder.b.tvUnreadCount.text = item.unreadCount.toString()
         val baseUrl = NativeLib.getBaseUrl()
-        if (item.targetPic.isNotEmpty()) {
+        
+        if (item.targetUserId == item.id && item.targetUsername == "پیام‌های ذخیره شده") {
+            holder.b.imgChatUser.setImageResource(android.R.drawable.ic_menu_save)
+            holder.b.imgChatUser.setColorFilter(Color.parseColor("#5288C1"))
+        } else if (item.targetPic.isNotEmpty()) {
             Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.ic_sun).into(holder.b.imgChatUser)
+            holder.b.imgChatUser.clearColorFilter()
         } else {
             holder.b.imgChatUser.setImageResource(R.drawable.ic_sun)
+            holder.b.imgChatUser.clearColorFilter()
         }
+        
         holder.b.root.setOnClickListener { onClick(item) }
     }
     override fun getItemCount(): Int = items.size
@@ -690,29 +729,21 @@ class FeedAdapter(
             holder.b.imgBadge.visibility = View.GONE
         }
 
-        // >>> اعمال بی‌نقص رنگ VIP و حذفِ کامل سایه و حاشیه کثیف <<<
         val typedValue = TypedValue()
         holder.b.root.context.theme.resolveAttribute(android.R.attr.colorBackground, typedValue, true)
         
-        if (item.isVip && item.customBg.isNotEmpty()) {
-            try { 
-                holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg))
-                holder.b.cardPost.cardElevation = 0f
-                if (holder.b.cardPost is MaterialCardView) {
-                    (holder.b.cardPost as MaterialCardView).strokeWidth = 0 
+        if (holder.b.cardPost is MaterialCardView) {
+            if (item.isVip && item.customBg.isNotEmpty()) {
+                try { 
+                    holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg))
+                    (holder.b.cardPost as MaterialCardView).setStrokeWidth(0)
+                } catch(e: Exception) {
+                    holder.b.cardPost.setCardBackgroundColor(typedValue.data)
+                    (holder.b.cardPost as MaterialCardView).setStrokeWidth(2)
                 }
-            } catch(e: Exception) {
+            } else {
                 holder.b.cardPost.setCardBackgroundColor(typedValue.data)
-                holder.b.cardPost.cardElevation = 4f
-                if (holder.b.cardPost is MaterialCardView) {
-                    (holder.b.cardPost as MaterialCardView).strokeWidth = 2
-                }
-            }
-        } else {
-            holder.b.cardPost.setCardBackgroundColor(typedValue.data)
-            holder.b.cardPost.cardElevation = 4f
-            if (holder.b.cardPost is MaterialCardView) {
-                (holder.b.cardPost as MaterialCardView).strokeWidth = 2
+                (holder.b.cardPost as MaterialCardView).setStrokeWidth(2)
             }
         }
 

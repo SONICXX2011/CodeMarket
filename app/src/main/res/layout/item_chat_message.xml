@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/layoutMessageRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="4dp">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardMessageBubble"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxWidth="300dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="0dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp">
+
+            <LinearLayout
+                android:id="@+id/layoutReplyQuote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="#1A000000"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp">
+                <View android:layout_width="3dp" android:layout_height="match_parent" android:background="#5288C1" />
+                <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:padding="6dp">
+                    <TextView android:id="@+id/tvReplyUsernameQuote" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#5288C1" android:textStyle="bold" android:textSize="11sp" />
+                    <TextView android:id="@+id/tvReplyTextQuote" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="?android:attr/textColorSecondary" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <FrameLayout
+                android:id="@+id/layoutMedia"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp">
+                <ImageView android:id="@+id/imgMessageMedia" android:layout_width="220dp" android:layout_height="220dp" android:scaleType="centerCrop" android:background="#1A000000" />
+                <ImageView android:id="@+id/imgPlayVideo" android:layout_width="48dp" android:layout_height="48dp" android:layout_gravity="center" android:src="@android:drawable/ic_media_play" app:tint="@android:color/white" android:visibility="gone"/>
+                <TextView android:id="@+id/tvMediaInfo" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="top|start" android:layout_margin="8dp" android:background="@drawable/bg_circle_glass" android:backgroundTint="#80000000" android:textColor="@android:color/white" android:textSize="10sp" android:paddingHorizontal="6dp" android:paddingVertical="2dp" android:visibility="gone"/>
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/tvMessageText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="?android:attr/textColorPrimary"
+                android:lineSpacingExtra="2dp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_gravity="end"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+                <TextView android:id="@+id/tvMessageTime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#888888" android:textSize="10sp" />
+                <ImageView android:id="@+id/imgMessageStatus" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginStart="4dp" android:src="@drawable/ic_tick" app:tint="#5288C1" android:visibility="gone"/>
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>
