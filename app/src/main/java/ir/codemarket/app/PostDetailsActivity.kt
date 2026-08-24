@@ -309,18 +309,15 @@ class PostCommentsAdapter(
         holder.b.tvCommentText.textSize = size
         MarkdownUtils.setMarkdownText(markwon, holder.b.tvCommentText, item.text)
 
-        // هندلینگ ریپلای تلگرامی
+        // ارورهای tvReplyInfo اینجا با جایگزینی با layoutReplyQuote برطرف شد
         if (item.replyToId != -1 && item.replyToUsername.isNotEmpty()) {
             holder.b.layoutReplyQuote.visibility = View.VISIBLE
             holder.b.tvReplyUsernameQuote.text = item.replyToUsername
             holder.b.tvReplyTextQuote.text = item.replyToText
-            holder.b.tvReplyInfo.visibility = View.GONE 
         } else {
             holder.b.layoutReplyQuote.visibility = View.GONE
-            holder.b.tvReplyInfo.visibility = View.GONE
         }
 
-        // هندلینگ مدیا (ویدیو و عکس) با تامبنیل
         if (item.media.isNotEmpty()) {
             holder.b.layoutMedia.visibility = View.VISIBLE
             val fullMediaUrl = if (item.media.startsWith("http")) item.media else baseUrl + item.media
@@ -329,13 +326,12 @@ class PostCommentsAdapter(
             if (item.mediaType == "video") {
                 holder.b.imgPlayVideo.visibility = View.VISIBLE
                 holder.b.tvMediaInfo.visibility = View.VISIBLE
-                holder.b.tvMediaInfo.text = "ویدیو" // میتوان با استفاده از متادیتا ثانیه را گرفت
+                holder.b.tvMediaInfo.text = "ویدیو" 
             } else {
                 holder.b.imgPlayVideo.visibility = View.GONE
                 holder.b.tvMediaInfo.visibility = View.GONE
             }
 
-            // کلیک برای پخش تمام‌صفحه فایل (فارغ از دانلود اتوماتیک)
             holder.b.imgCommentMedia.setOnClickListener {
                 val intent = Intent(Intent.ACTION_VIEW)
                 intent.setDataAndType(Uri.parse(fullMediaUrl), if (item.mediaType == "video") "video/*" else "image/*")

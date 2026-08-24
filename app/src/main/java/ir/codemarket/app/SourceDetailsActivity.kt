@@ -2,7 +2,7 @@ package ir.codemarket.app
 
 import android.app.DownloadManager
 import android.content.Context
-import android.content.Intent // >>> این همون ایمپورتی هست که جا مونده بود <<<
+import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -165,7 +165,8 @@ class SourceDetailsActivity : AppCompatActivity() {
                     c.optString("badge_url", ""),
                     c.optString("custom_bg", ""),
                     c.optInt("reply_to_id", -1),
-                    c.optString("reply_to_username", "")
+                    c.optString("reply_to_username", ""),
+                    c.optString("reply_to_text", "")
                 )
             )
         }
@@ -364,7 +365,7 @@ class SourceDetailsActivity : AppCompatActivity() {
 data class CommentItem(
     val id: Int, val userId: Int, val username: String, val userPic: String, val text: String,
     val rating: Int, val date: String, val isVip: Boolean, val badgeUrl: String, val customBg: String,
-    val replyToId: Int, val replyToUsername: String
+    val replyToId: Int, val replyToUsername: String, val replyToText: String
 )
 
 class CommentsAdapter(
@@ -391,11 +392,13 @@ class CommentsAdapter(
         holder.b.tvCommentText.textSize = size
         MarkdownUtils.setMarkdownText(markwon, holder.b.tvCommentText, item.text)
 
+        // ارورهای tvReplyInfo با جایگزینی با layoutReplyQuote برطرف شد
         if (item.replyToId != -1 && item.replyToUsername.isNotEmpty()) {
-            holder.b.tvReplyInfo.visibility = View.VISIBLE
-            holder.b.tvReplyInfo.text = "در پاسخ به ${item.replyToUsername}"
+            holder.b.layoutReplyQuote.visibility = View.VISIBLE
+            holder.b.tvReplyUsernameQuote.text = item.replyToUsername
+            holder.b.tvReplyTextQuote.text = item.replyToText
         } else {
-            holder.b.tvReplyInfo.visibility = View.GONE
+            holder.b.layoutReplyQuote.visibility = View.GONE
         }
 
         if (item.userId == currentUserId && currentUserId != -1) {
@@ -410,7 +413,8 @@ class CommentsAdapter(
 
         val baseUrl = NativeLib.getBaseUrl()
         if (item.userPic.isNotEmpty()) {
-            Glide.with(holder.b.root.context).load(if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic).into(holder.b.imgCommentUser)
+            val fullUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
+            Glide.with(holder.b.root.context).load(fullUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgCommentUser)
         } else holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
 
         if (item.isVip && item.badgeUrl.isNotEmpty()) {
