@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.DataOutputStream
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -59,7 +60,6 @@ class HomeActivity : AppCompatActivity() {
     private var hasMoreFeed = true
     private var currentUserId = -1
 
-    // متغیرهای بخش ارائه سورس
     private var selectedZipUri: Uri? = null
     private var selectedLogoUri: Uri? = null
     private val selectedScreenshots = mutableListOf<Uri>()
@@ -102,8 +102,11 @@ class HomeActivity : AppCompatActivity() {
         sessionManager = SessionManager(this)
         markwon = MarkdownUtils.createMarkwon(this)
 
-        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
-        else setTheme(R.style.Theme_CodeMarket_Light)
+        if (sessionManager.isDarkMode()) {
+            setTheme(R.style.Theme_CodeMarket_Dark)
+        } else {
+            setTheme(R.style.Theme_CodeMarket_Light)
+        }
 
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -138,7 +141,9 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
-        binding.btnAddPost.setOnClickListener { startActivity(Intent(this, CreatePostActivity::class.java)) }
+        binding.btnAddPost.setOnClickListener { 
+            startActivity(Intent(this, CreatePostActivity::class.java)) 
+        }
         
         binding.swipeRefresh.setOnRefreshListener {
             if (binding.recyclerFeed.visibility == View.VISIBLE) {
@@ -432,7 +437,6 @@ class HomeActivity : AppCompatActivity() {
             .show()
     }
 
-    // --- منطق پیشرفته بخش آپلود (ارائه سورس) ---
     private fun setupUploadView() {
         MarkdownUtils.applyMarkdownShortcuts(binding.etSourceDesc)
         
@@ -614,7 +618,9 @@ class ChatListAdapter(private val items: List<ChatListItem>, private val onClick
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemChatListBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.b.tvChatUsername.text = item.targetUsername; holder.b.tvChatLastMessage.text = item.lastMessage; holder.b.tvChatDate.text = item.date
+        holder.b.tvChatUsername.text = item.targetUsername
+        holder.b.tvChatLastMessage.text = item.lastMessage
+        holder.b.tvChatDate.text = item.date
         holder.b.tvUnreadCount.visibility = if (item.unreadCount > 0) View.VISIBLE else View.GONE
         holder.b.tvUnreadCount.text = item.unreadCount.toString()
         val baseUrl = NativeLib.getBaseUrl()
@@ -630,8 +636,10 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemShopBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.b.tvSourceName.text = item.name; holder.b.tvSourceDesc.text = item.desc
-        holder.b.root.setOnClickListener { onClick(position) }; holder.b.btnShowDetails.setOnClickListener { onClick(position) }
+        holder.b.tvSourceName.text = item.name
+        holder.b.tvSourceDesc.text = item.desc
+        holder.b.root.setOnClickListener { onClick(position) }
+        holder.b.btnShowDetails.setOnClickListener { onClick(position) }
         val fullLogoUrl = if (item.logo.startsWith("http")) item.logo else NativeLib.getBaseUrl() + item.logo
         Glide.with(holder.b.root.context).load(fullLogoUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgSourceLogo)
     }
@@ -639,11 +647,18 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
 }
 
 class FeedAdapter(
-    private val items: List<FeedItem>, private var currentUserId: Int, private val markwon: Markwon, private val size: Float,
-    private val onLikeClick: (Int, Int) -> Unit, private val onPostClick: (Int) -> Unit, private val onOptionsClick: (View, FeedItem, Int) -> Unit, private val onUserClick: (Int) -> Unit
+    private val items: List<FeedItem>, 
+    private var currentUserId: Int, 
+    private val markwon: Markwon, 
+    private val size: Float,
+    private val onLikeClick: (Int, Int) -> Unit, 
+    private val onPostClick: (Int) -> Unit, 
+    private val onOptionsClick: (View, FeedItem, Int) -> Unit, 
+    private val onUserClick: (Int) -> Unit
 ) : RecyclerView.Adapter<FeedAdapter.ViewHolder>() {
     
     class ViewHolder(val b: ItemFeedPostBinding) : RecyclerView.ViewHolder(b.root)
+    
     fun setCurrentUserId(id: Int) { currentUserId = id }
     
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemFeedPostBinding.inflate(LayoutInflater.from(parent.context), parent, false))
