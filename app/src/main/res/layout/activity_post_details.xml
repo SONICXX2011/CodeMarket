@@ -22,7 +22,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:paddingBottom="100dp"
+        android:paddingBottom="140dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -178,51 +178,97 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- نوار شناور و شیشه‌ای کامنت -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/bottomBar"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
-        android:layout_marginBottom="24dp"
-        app:cardBackgroundColor="#E61A1A2E"
-        app:cardCornerRadius="28dp"
-        app:cardElevation="10dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:orientation="vertical"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-        <LinearLayout
+        <androidx.cardview.widget.CardView
+            android:id="@+id/layoutReplyPreview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="8dp">
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="#CC1A1A2E"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            android:visibility="gone">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="12dp" android:gravity="center_vertical">
+                <View android:layout_width="4dp" android:layout_height="match_parent" android:background="#5288C1" />
+                <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
+                    <TextView android:id="@+id/tvReplyPreviewName" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#5288C1" android:textStyle="bold" android:textSize="13sp" />
+                    <TextView android:id="@+id/tvReplyPreviewText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@android:color/white" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+                </LinearLayout>
+                <ImageView android:id="@+id/btnCancelReply" android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_close_clear_cancel" app:tint="@android:color/white" android:background="?attr/selectableItemBackgroundBorderless" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
-            <EditText
-                android:id="@+id/etComment"
-                android:layout_width="0dp"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/layoutMediaPreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="#CC1A1A2E"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            android:visibility="gone">
+            <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+                <ImageView android:id="@+id/imgMediaPreview" android:layout_width="100dp" android:layout_height="100dp" android:scaleType="centerCrop" android:layout_margin="12dp" />
+                <ImageView android:id="@+id/btnCancelMedia" android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_close_clear_cancel" app:tint="@android:color/white" android:background="@drawable/bg_circle_glass" android:backgroundTint="#80000000" android:layout_margin="16dp" />
+            </FrameLayout>
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/bottomBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="#E61A1A2E"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="10dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@null"
-                android:hint="ثبت نظر (مارک‌داون آزاد)"
-                android:textColorHint="#99FFFFFF"
-                android:textColor="@android:color/white"
-                android:textSize="15sp"
-                android:maxLines="4"
-                android:padding="8dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp">
 
-            <ImageView
-                android:id="@+id/btnSendComment"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_circle_glass"
-                android:src="@android:drawable/ic_menu_send"
-                android:padding="8dp"
-                app:tint="#5288C1" />
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+                <ImageView
+                    android:id="@+id/btnAttach"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@android:drawable/ic_menu_gallery"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="#80FFFFFF"
+                    android:padding="4dp"/>
 
+                <EditText
+                    android:id="@+id/etComment"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:hint="ثبت نظر (مارک‌داون آزاد)"
+                    android:textColorHint="#99FFFFFF"
+                    android:textColor="@android:color/white"
+                    android:textSize="15sp"
+                    android:maxLines="4"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="8dp" />
+
+                <ImageView
+                    android:id="@+id/btnSendComment"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_circle_glass"
+                    android:src="@android:drawable/ic_menu_send"
+                    android:padding="8dp"
+                    app:tint="#5288C1" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
