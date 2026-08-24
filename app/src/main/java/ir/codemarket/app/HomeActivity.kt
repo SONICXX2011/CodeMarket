@@ -11,6 +11,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -31,7 +34,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.io.File
+import java.io.DataOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 
 class HomeActivity : AppCompatActivity() {
 
@@ -42,10 +47,10 @@ class HomeActivity : AppCompatActivity() {
     private val shopItems = mutableListOf<ShopItem>()
     private val filteredItems = mutableListOf<ShopItem>()
     private lateinit var shopAdapter: ShopAdapter
-
+    
     private val feedItems = mutableListOf<FeedItem>()
     private lateinit var feedAdapter: FeedAdapter
-
+    
     private val chatItems = mutableListOf<ChatListItem>()
     private lateinit var chatListAdapter: ChatListAdapter
     
@@ -54,20 +59,36 @@ class HomeActivity : AppCompatActivity() {
     private var hasMoreFeed = true
     private var currentUserId = -1
 
+    // متغیرهای بخش ارائه سورس
     private var selectedZipUri: Uri? = null
     private var selectedLogoUri: Uri? = null
+    private val selectedScreenshots = mutableListOf<Uri>()
 
     private val pickZip = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedZipUri = it
-            binding.btnSelectZip.text = "فایل ZIP انتخاب شد"
+            binding.layoutZipPreview.visibility = View.VISIBLE
+            binding.tvZipPreviewName.text = "فایل ZIP انتخاب شد"
         }
     }
 
     private val pickLogo = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedLogoUri = it
-            binding.btnSelectLogo.text = "لوگو انتخاب شد"
+            binding.layoutLogoPreview.visibility = View.VISIBLE
+            Glide.with(this).load(it).into(binding.imgLogoPreview)
+        }
+    }
+
+    private val pickScreenshots = registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+        val slotsLeft = 6 - selectedScreenshots.size
+        val toAdd = uris.take(slotsLeft)
+        if (toAdd.isNotEmpty()) {
+            selectedScreenshots.addAll(toAdd)
+            updateScreenshotsUI()
+        }
+        if (uris.size > slotsLeft) {
+            Toast.makeText(this, "حداکثر ۶ اسکرین‌شات مجاز است", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -79,8 +100,6 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         sessionManager = SessionManager(this)
-        
-        // استفاده از هوش مصنوعی لینک و منشن مارک‌داون
         markwon = MarkdownUtils.createMarkwon(this)
 
         if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
@@ -114,22 +133,20 @@ class HomeActivity : AppCompatActivity() {
                 binding.swipeRefresh.isRefreshing = true
                 currentPage = 1
                 loadFeedData()
-            } else {
+            } else { 
                 loadChatsData() 
             }
         }
 
-        binding.btnAddPost.setOnClickListener {
-            startActivity(Intent(this, CreatePostActivity::class.java))
-        }
+        binding.btnAddPost.setOnClickListener { startActivity(Intent(this, CreatePostActivity::class.java)) }
         
         binding.swipeRefresh.setOnRefreshListener {
             if (binding.recyclerFeed.visibility == View.VISIBLE) {
                 currentPage = 1
                 loadFeedData()
-            } else {
+            } else { 
                 binding.swipeRefresh.isRefreshing = false
-                loadChatsData()
+                loadChatsData() 
             }
         }
 
@@ -141,7 +158,7 @@ class HomeActivity : AppCompatActivity() {
             binding.tabPrivate.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
             binding.tabPrivate.setTypeface(null, Typeface.NORMAL)
             binding.tabPrivate.setBackgroundColor(Color.TRANSPARENT)
-
+            
             binding.recyclerFeed.visibility = View.VISIBLE
             binding.recyclerChats.visibility = View.GONE
             binding.btnAddPost.visibility = View.VISIBLE
@@ -155,7 +172,7 @@ class HomeActivity : AppCompatActivity() {
             binding.tabPublic.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
             binding.tabPublic.setTypeface(null, Typeface.NORMAL)
             binding.tabPublic.setBackgroundColor(Color.TRANSPARENT)
-
+            
             binding.recyclerFeed.visibility = View.GONE
             binding.recyclerChats.visibility = View.VISIBLE
             binding.btnAddPost.visibility = View.GONE
@@ -190,17 +207,13 @@ class HomeActivity : AppCompatActivity() {
         
         binding.etSearch.visibility = View.GONE
         binding.topBar.visibility = if (section == "profile") View.GONE else View.VISIBLE
-
-        if (section == "home") {
-            if (binding.recyclerFeed.visibility == View.VISIBLE) binding.btnAddPost.visibility = View.VISIBLE
-        } else {
-            binding.btnAddPost.visibility = View.GONE
-        }
+        
+        binding.btnAddPost.visibility = if (section == "home" && binding.recyclerFeed.visibility == View.VISIBLE) View.VISIBLE else View.GONE
     }
 
     private fun setupChatsView() {
-        chatListAdapter = ChatListAdapter(chatItems) { chat ->
-            Toast.makeText(this, "چت با ${chat.targetUsername} در حال توسعه...", Toast.LENGTH_SHORT).show()
+        chatListAdapter = ChatListAdapter(chatItems) { chat -> 
+            Toast.makeText(this, "چت با ${chat.targetUsername} در حال توسعه...", Toast.LENGTH_SHORT).show() 
         }
         binding.recyclerChats.layoutManager = LinearLayoutManager(this)
         binding.recyclerChats.adapter = chatListAdapter
@@ -212,7 +225,7 @@ class HomeActivity : AppCompatActivity() {
         chatItems.add(ChatListItem(2, 3, "sara_coder", "", "فایل‌ها رو برات فرستادم.", "دیروز", 0))
         chatListAdapter.notifyDataSetChanged()
     }
-
+    
     private fun setupShopView() {
         shopAdapter = ShopAdapter(filteredItems) { position ->
             val intent = Intent(this, SourceDetailsActivity::class.java)
@@ -271,7 +284,7 @@ class HomeActivity : AppCompatActivity() {
             }
         }
     }
-
+    
     private fun setupFeedView() {
         val layoutManager = LinearLayoutManager(this)
         feedAdapter = FeedAdapter(feedItems, currentUserId, markwon, sessionManager.getTextSize(),
@@ -343,6 +356,28 @@ class HomeActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
+    private fun toggleLike(postId: Int, position: Int) {
+        val token = sessionManager.fetchAuthToken() ?: ""
+        val payload = JSONObject().put("post_id", postId).toString()
+        CoroutineScope(Dispatchers.Main).launch {
+            val (response, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/feed/like", payload, token) }
+            if (response != null) {
+                val json = JSONObject(response)
+                if (json.getBoolean("success")) {
+                    val item = feedItems[position]
+                    feedItems[position] = item.copy(isLiked = json.getBoolean("liked"), likeCount = json.getInt("like_count"))
+                    feedAdapter.notifyItemChanged(position)
+                }
+            }
+        }
+    }
+
+    private fun openPostDetails(postId: Int) {
+        val intent = Intent(this, PostDetailsActivity::class.java)
+        intent.putExtra("post_id", postId)
+        startActivity(intent)
+    }
+
     private fun showPostOptions(view: View, post: FeedItem, position: Int) {
         val popup = PopupMenu(this, view)
         popup.menu.add("ویرایش")
@@ -375,7 +410,6 @@ class HomeActivity : AppCompatActivity() {
             setPadding(40, 40, 40, 40)
             hint = "ویرایش پست (پشتیبانی از مارک‌داون)..."
         }
-        
         MarkdownUtils.applyMarkdownShortcuts(editText)
 
         AlertDialog.Builder(this)
@@ -398,48 +432,121 @@ class HomeActivity : AppCompatActivity() {
             .show()
     }
 
+    // --- منطق پیشرفته بخش آپلود (ارائه سورس) ---
     private fun setupUploadView() {
-        binding.btnSelectLogo.setOnClickListener { pickLogo.launch("image/*") }
-        binding.btnSelectZip.setOnClickListener { pickZip.launch("application/zip") }
-        
         MarkdownUtils.applyMarkdownShortcuts(binding.etSourceDesc)
         
+        binding.btnSelectLogo.setOnClickListener { pickLogo.launch("image/*") }
+        binding.btnRemoveLogo.setOnClickListener { selectedLogoUri = null; binding.layoutLogoPreview.visibility = View.GONE }
+        
+        binding.btnSelectZip.setOnClickListener { pickZip.launch("application/zip") }
+        binding.btnRemoveZip.setOnClickListener { selectedZipUri = null; binding.layoutZipPreview.visibility = View.GONE }
+        
+        binding.btnSelectScreenshots.setOnClickListener {
+            if (selectedScreenshots.size < 6) pickScreenshots.launch("image/*")
+            else Toast.makeText(this, "حداکثر ۶ عکس انتخاب شده است", Toast.LENGTH_SHORT).show()
+        }
+
         binding.btnUpload.setOnClickListener {
-            if (selectedZipUri != null && selectedLogoUri != null) {
+            if (selectedZipUri != null && selectedLogoUri != null && selectedScreenshots.isNotEmpty()) {
                 val name = binding.etSourceName.text.toString()
                 val desc = binding.etSourceDesc.text.toString()
                 if (name.isNotEmpty() && desc.isNotEmpty()) {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        val zipFile = File(cacheDir, "temp_zip.zip").apply { copyFromUri(selectedZipUri!!) }
-                        val logoFile = File(cacheDir, "temp_logo.png").apply { copyFromUri(selectedLogoUri!!) }
-                        val fields = mapOf("name" to name, "description" to desc)
-                        val token = sessionManager.fetchAuthToken() ?: ""
-                        val (res, _) = withContext(Dispatchers.IO) { ApiClient.uploadFile("/api/upload", token, zipFile, logoFile, fields) }
-                        if (res != null && JSONObject(res).getBoolean("success")) {
-                            Toast.makeText(this@HomeActivity, "سورس ارسال شد", Toast.LENGTH_SHORT).show()
-                            binding.etSourceName.setText("")
-                            binding.etSourceDesc.setText("")
-                            selectedZipUri = null; selectedLogoUri = null
-                        } else {
-                            Toast.makeText(this@HomeActivity, "خطا در ارسال", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                } else {
-                    Toast.makeText(this, "لطفاً نام و توضیحات را وارد کنید", Toast.LENGTH_SHORT).show()
+                    performAdvancedUpload(name, desc)
+                } else Toast.makeText(this, "لطفاً نام و توضیحات را وارد کنید", Toast.LENGTH_SHORT).show()
+            } else Toast.makeText(this, "لوگو، فایل ZIP و حداقل یک اسکرین‌شات الزامی است", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun updateScreenshotsUI() {
+        binding.layoutScreenshotsPreview.removeAllViews()
+        selectedScreenshots.forEachIndexed { index, uri ->
+            val frame = FrameLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(dpToPx(100), dpToPx(100)).apply { setMargins(0, 0, dpToPx(12), 0) }
+            }
+            val img = ImageView(this).apply {
+                layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                Glide.with(this@HomeActivity).load(uri).into(this)
+            }
+            val btnRemove = ImageView(this).apply {
+                layoutParams = FrameLayout.LayoutParams(dpToPx(24), dpToPx(24)).apply { setMargins(dpToPx(4), dpToPx(4), 0, 0) }
+                setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+                setColorFilter(Color.WHITE)
+                setBackgroundResource(R.drawable.bg_circle_glass)
+                setOnClickListener {
+                    selectedScreenshots.removeAt(index)
+                    updateScreenshotsUI()
                 }
-            } else {
-                Toast.makeText(this, "لوگو و فایل ZIP الزامی است", Toast.LENGTH_SHORT).show()
+            }
+            frame.addView(img); frame.addView(btnRemove)
+            binding.layoutScreenshotsPreview.addView(frame)
+        }
+    }
+
+    private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
+
+    private fun performAdvancedUpload(name: String, desc: String) {
+        binding.btnUpload.isEnabled = false
+        val token = sessionManager.fetchAuthToken() ?: return
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val url = URL(NativeLib.getBaseUrl() + "/api/upload")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Authorization", "Bearer $token")
+                connection.doOutput = true
+
+                val boundary = "Boundary-" + System.currentTimeMillis()
+                connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+                val outputStream = DataOutputStream(connection.outputStream)
+
+                fun writeText(fieldName: String, value: String) {
+                    outputStream.writeBytes("--$boundary\r\n")
+                    outputStream.writeBytes("Content-Disposition: form-data; name=\"$fieldName\"\r\n\r\n")
+                    outputStream.write(value.toByteArray(Charsets.UTF_8))
+                    outputStream.writeBytes("\r\n")
+                }
+                fun writeFile(fieldName: String, fileName: String, mimeType: String, uri: Uri) {
+                    outputStream.writeBytes("--$boundary\r\n")
+                    outputStream.writeBytes("Content-Disposition: form-data; name=\"$fieldName\"; filename=\"$fileName\"\r\n")
+                    outputStream.writeBytes("Content-Type: $mimeType\r\n\r\n")
+                    contentResolver.openInputStream(uri)?.use { it.copyTo(outputStream) }
+                    outputStream.writeBytes("\r\n")
+                }
+
+                writeText("name", name)
+                writeText("description", desc)
+                writeFile("logo", "logo.jpg", "image/jpeg", selectedLogoUri!!)
+                writeFile("zip_file", "source.zip", "application/zip", selectedZipUri!!)
+
+                selectedScreenshots.forEachIndexed { i, uri ->
+                    writeFile("screenshots", "scr_$i.jpg", "image/jpeg", uri)
+                }
+
+                outputStream.writeBytes("--$boundary--\r\n")
+                outputStream.flush()
+
+                val code = connection.responseCode
+                withContext(Dispatchers.Main) {
+                    binding.btnUpload.isEnabled = true
+                    if (code in 200..299) {
+                        Toast.makeText(this@HomeActivity, "ارسال موفقیت‌آمیز بود", Toast.LENGTH_SHORT).show()
+                        binding.etSourceName.setText(""); binding.etSourceDesc.setText("")
+                        selectedLogoUri = null; selectedZipUri = null; selectedScreenshots.clear()
+                        binding.layoutLogoPreview.visibility = View.GONE; binding.layoutZipPreview.visibility = View.GONE; updateScreenshotsUI()
+                    } else Toast.makeText(this@HomeActivity, "خطا در ارسال", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { binding.btnUpload.isEnabled = true; Toast.makeText(this@HomeActivity, "خطای اتصال", Toast.LENGTH_SHORT).show() }
             }
         }
     }
 
     private fun setupProfileView() {
         binding.btnChangePic.setOnClickListener { pickProfilePic.launch("image/*") }
-        
-        binding.btnSettings.setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
-        }
-
+        binding.btnSettings.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         binding.btnUpdateProfile.setOnClickListener {
             val fullName = binding.etFullName.text.toString()
             val bio = binding.etBio.text.toString()
@@ -488,35 +595,11 @@ class HomeActivity : AppCompatActivity() {
             this.outputStream().use { output -> input.copyTo(output) }
         }
     }
-
-    private fun toggleLike(postId: Int, position: Int) {
-        val token = sessionManager.fetchAuthToken() ?: ""
-        val payload = JSONObject().put("post_id", postId).toString()
-        CoroutineScope(Dispatchers.Main).launch {
-            val (response, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/feed/like", payload, token) }
-            if (response != null) {
-                val json = JSONObject(response)
-                if (json.getBoolean("success")) {
-                    val item = feedItems[position]
-                    feedItems[position] = item.copy(isLiked = json.getBoolean("liked"), likeCount = json.getInt("like_count"))
-                    feedAdapter.notifyItemChanged(position)
-                }
-            }
-        }
-    }
-
-    private fun openPostDetails(postId: Int) {
-        val intent = Intent(this, PostDetailsActivity::class.java)
-        intent.putExtra("post_id", postId)
-        startActivity(intent)
-    }
 }
 
 // دیتامدل‌ها
 data class ShopItem(val id: Int, val name: String, val desc: String, val logo: String)
-
 data class ChatListItem(val id: Int, val targetUserId: Int, val targetUsername: String, val targetPic: String, val lastMessage: String, val date: String, val unreadCount: Int)
-
 data class FeedItem(
     val id: Int, val userId: Int, val username: String, val userPic: String,
     val text: String, val media: String, val mediaType: String,
@@ -531,19 +614,12 @@ class ChatListAdapter(private val items: List<ChatListItem>, private val onClick
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemChatListBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.b.tvChatUsername.text = item.targetUsername
-        holder.b.tvChatLastMessage.text = item.lastMessage
-        holder.b.tvChatDate.text = item.date
-        if (item.unreadCount > 0) {
-            holder.b.tvUnreadCount.visibility = View.VISIBLE
-            holder.b.tvUnreadCount.text = item.unreadCount.toString()
-        } else holder.b.tvUnreadCount.visibility = View.GONE
-        
+        holder.b.tvChatUsername.text = item.targetUsername; holder.b.tvChatLastMessage.text = item.lastMessage; holder.b.tvChatDate.text = item.date
+        holder.b.tvUnreadCount.visibility = if (item.unreadCount > 0) View.VISIBLE else View.GONE
+        holder.b.tvUnreadCount.text = item.unreadCount.toString()
         val baseUrl = NativeLib.getBaseUrl()
-        if (item.targetPic.isNotEmpty()) {
-            Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.ic_sun).into(holder.b.imgChatUser)
-        } else holder.b.imgChatUser.setImageResource(R.drawable.ic_sun)
-        
+        if (item.targetPic.isNotEmpty()) Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.ic_sun).into(holder.b.imgChatUser)
+        else holder.b.imgChatUser.setImageResource(R.drawable.ic_sun)
         holder.b.root.setOnClickListener { onClick(item) }
     }
     override fun getItemCount(): Int = items.size
@@ -554,11 +630,8 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemShopBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.b.tvSourceName.text = item.name
-        holder.b.tvSourceDesc.text = item.desc
-        holder.b.root.setOnClickListener { onClick(position) }
-        holder.b.btnShowDetails.setOnClickListener { onClick(position) }
-        
+        holder.b.tvSourceName.text = item.name; holder.b.tvSourceDesc.text = item.desc
+        holder.b.root.setOnClickListener { onClick(position) }; holder.b.btnShowDetails.setOnClickListener { onClick(position) }
         val fullLogoUrl = if (item.logo.startsWith("http")) item.logo else NativeLib.getBaseUrl() + item.logo
         Glide.with(holder.b.root.context).load(fullLogoUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgSourceLogo)
     }
@@ -566,29 +639,20 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
 }
 
 class FeedAdapter(
-    private val items: List<FeedItem>,
-    private var currentUserId: Int,
-    private val markwon: Markwon,
-    private val size: Float,
-    private val onLikeClick: (Int, Int) -> Unit,
-    private val onPostClick: (Int) -> Unit,
-    private val onOptionsClick: (View, FeedItem, Int) -> Unit,
-    private val onUserClick: (Int) -> Unit
+    private val items: List<FeedItem>, private var currentUserId: Int, private val markwon: Markwon, private val size: Float,
+    private val onLikeClick: (Int, Int) -> Unit, private val onPostClick: (Int) -> Unit, private val onOptionsClick: (View, FeedItem, Int) -> Unit, private val onUserClick: (Int) -> Unit
 ) : RecyclerView.Adapter<FeedAdapter.ViewHolder>() {
-
+    
     class ViewHolder(val b: ItemFeedPostBinding) : RecyclerView.ViewHolder(b.root)
-
     fun setCurrentUserId(id: Int) { currentUserId = id }
-
+    
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemFeedPostBinding.inflate(LayoutInflater.from(parent.context), parent, false))
-
+    
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
         holder.b.tvUsername.text = item.username
         
         holder.b.tvPostText.textSize = size
-        
-        // جایگذاری لینک‌های آبی و آیدی‌ها در متن پست
         MarkdownUtils.setMarkdownText(markwon, holder.b.tvPostText, item.text)
         
         holder.b.tvLikeCount.text = item.likeCount.toString()
@@ -608,13 +672,11 @@ class FeedAdapter(
             try { holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg)) } catch(e: Exception) {}
         }
 
-        // اگر پست مال خودشه می‌تونه منو سه‌نقطه رو باز کنه و اگه روی عکسش بزنه می‌ره تو پروفایلش
         if (item.userId == currentUserId && currentUserId != -1) {
             holder.b.tvUsername.setCompoundDrawablesWithIntrinsicBounds(0, 0, android.R.drawable.ic_menu_more, 0)
             holder.b.tvUsername.setOnClickListener { onOptionsClick(it, item, position) }
             holder.b.imgUserPic.setOnClickListener { onUserClick(item.userId) }
         } else {
-            // اگر پست مال شخص دیگه‌ایه با کلیک روی اسم یا عکس می‌ره تو پروفایل اون شخص
             holder.b.tvUsername.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
             holder.b.tvUsername.setOnClickListener { onUserClick(item.userId) }
             holder.b.imgUserPic.setOnClickListener { onUserClick(item.userId) }
@@ -644,5 +706,6 @@ class FeedAdapter(
         holder.b.tvPostText.setOnClickListener { onPostClick(item.id) }
         holder.b.root.setOnClickListener { onPostClick(item.id) }
     }
+    
     override fun getItemCount(): Int = items.size
 }
