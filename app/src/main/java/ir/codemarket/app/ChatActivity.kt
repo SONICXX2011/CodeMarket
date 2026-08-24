@@ -21,9 +21,7 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.google.android.material.card.MaterialCardView
 import io.noties.markwon.Markwon
-import io.noties.markwon.linkify.LinkifyPlugin
 import ir.codemarket.app.databinding.ActivityChatBinding
 import ir.codemarket.app.databinding.ItemChatMessageBinding
 import kotlinx.coroutines.CoroutineScope
@@ -64,12 +62,7 @@ class ChatActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         sessionManager = SessionManager(this)
-        
-        // پلاگین Linkify رو به Markwon اضافه کردم تا لینک‌ها و آیدی‌ها قابل کلیک بشن
-        markwon = Markwon.builder(this)
-            .usePlugin(LinkifyPlugin.create(Linkify.WEB_URLS or Linkify.EMAIL_ADDRESSES or Linkify.PHONE_NUMBERS))
-            .build()
-            
+        markwon = MarkdownUtils.createMarkwon(this)
         extractCurrentUserId()
 
         if (sessionManager.isDarkMode()) {
@@ -171,7 +164,6 @@ class ChatActivity : AppCompatActivity() {
         binding.etMessage.requestFocus()
     }
 
-    // --- منوی تلگرامی برای نگه‌داشتن روی پیام ---
     private fun showMessageOptions(view: View, msg: ChatMessageItem, position: Int) {
         val popup = PopupMenu(this, view)
         popup.menu.add("پاسخ دادن (Reply)")
@@ -375,8 +367,9 @@ class ChatMessagesAdapter(
         if (item.text.isNotEmpty()) {
             holder.b.tvMessageText.visibility = View.VISIBLE
             holder.b.tvMessageText.textSize = size
-            // مارک‌داون + لینک‌های قابل کلیک
             MarkdownUtils.setMarkdownText(markwon, holder.b.tvMessageText, item.text)
+            // استفاده از سیستم بومی اندروید برای قابل کلیک شدن لینک‌ها و شماره‌ها و ایمیل‌ها
+            Linkify.addLinks(holder.b.tvMessageText, Linkify.ALL)
         } else {
             holder.b.tvMessageText.visibility = View.GONE
         }
@@ -433,11 +426,9 @@ class ChatMessagesAdapter(
             holder.b.layoutVoice.visibility = View.GONE
         }
 
-        // --- کلیک برای ریپلای ---
         holder.b.cardMessageBubble.setOnClickListener { onReplyClick(item) }
         holder.b.tvMessageText.setOnClickListener { onReplyClick(item) }
 
-        // --- نگه‌داشتن طولانی برای پاپ‌آپ منو ---
         holder.b.cardMessageBubble.setOnLongClickListener {
             onMessageLongClick(it, item, position)
             true
