@@ -87,8 +87,14 @@ class HomeActivity : AppCompatActivity() {
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if (sessionManager.isDarkMode()) binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
-        else binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
+        // تنظیم رنگ شیشه‌ای منوی شناور بر اساس تم
+        if (sessionManager.isDarkMode()) {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
+            binding.bottomNavContainer.setCardBackgroundColor(Color.parseColor("#E61A1A2E"))
+        } else {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
+            binding.bottomNavContainer.setCardBackgroundColor(Color.parseColor("#E6FFFFFF"))
+        }
 
         setupShopView()
         setupFeedView()
@@ -126,13 +132,14 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
+        // هندل کردن گرافیک تب‌های بالای صفحه خانه (عمومی / شخصی)
         binding.tabPublic.setOnClickListener {
             binding.tabPublic.setTextColor(Color.parseColor("#5288C1"))
-            binding.tabPublic.setTypeface(null, Typeface.BOLD) // حل ارور textStyle
+            binding.tabPublic.setTypeface(null, Typeface.BOLD)
             binding.tabPublic.setBackgroundResource(R.drawable.bg_glass_input)
             
             binding.tabPrivate.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
-            binding.tabPrivate.setTypeface(null, Typeface.NORMAL) // حل ارور textStyle
+            binding.tabPrivate.setTypeface(null, Typeface.NORMAL)
             binding.tabPrivate.setBackgroundColor(Color.TRANSPARENT)
 
             binding.recyclerFeed.visibility = View.VISIBLE
@@ -142,11 +149,11 @@ class HomeActivity : AppCompatActivity() {
 
         binding.tabPrivate.setOnClickListener {
             binding.tabPrivate.setTextColor(Color.parseColor("#5288C1"))
-            binding.tabPrivate.setTypeface(null, Typeface.BOLD) // حل ارور textStyle
+            binding.tabPrivate.setTypeface(null, Typeface.BOLD)
             binding.tabPrivate.setBackgroundResource(R.drawable.bg_glass_input)
             
             binding.tabPublic.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
-            binding.tabPublic.setTypeface(null, Typeface.NORMAL) // حل ارور textStyle
+            binding.tabPublic.setTypeface(null, Typeface.NORMAL)
             binding.tabPublic.setBackgroundColor(Color.TRANSPARENT)
 
             binding.recyclerFeed.visibility = View.GONE
@@ -193,7 +200,7 @@ class HomeActivity : AppCompatActivity() {
 
     private fun setupChatsView() {
         chatListAdapter = ChatListAdapter(chatItems) { chat ->
-            // فعلاً برای جلوگیری از ارور کامپایل، این خط رو کامنت کردم تا ChatActivity رو تو پیام بعدی بسازیم
+            // تا زمان ساخت صفحه چت در مرحله بعد، کامنت شد تا کرش نکنه
             // val intent = Intent(this, ChatActivity::class.java)
             // intent.putExtra("target_id", chat.targetUserId)
             // intent.putExtra("target_username", chat.targetUsername)
@@ -205,6 +212,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun loadChatsData() {
+        // دموی موقت تا زمان اتصال به بک‌اند چت
         chatItems.clear()
         chatItems.add(ChatListItem(1, 2, "ali_dev", "", "سلام خوبی؟ پروژه چطور پیش میره؟", "12:30", 2))
         chatItems.add(ChatListItem(2, 3, "sara_coder", "", "فایل‌ها رو برات فرستادم.", "دیروز", 0))

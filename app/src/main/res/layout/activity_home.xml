@@ -11,7 +11,8 @@
         android:layout_height="wrap_content"
         android:background="@drawable/bg_glass_top_bar"
         android:orientation="vertical"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        android:elevation="4dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -68,7 +69,6 @@
                 android:background="?attr/selectableItemBackgroundBorderless" />
         </LinearLayout>
 
-        <!-- تب‌های عمومی و شخصی (فقط در بخش خانه نشان داده می‌شود) -->
         <LinearLayout
             android:id="@+id/layoutHomeTabs"
             android:layout_width="match_parent"
@@ -107,13 +107,13 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- کانتینر اصلی خانه که شامل فید عمومی و چت‌های شخصی است -->
+    <!-- لیست‌ها تا پایین صفحه میرن (parent) و با paddingBottom زیر منوی شناور گیر نمیکنن -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/topBar"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavContainer"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -127,38 +127,28 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
-                android:paddingBottom="80dp" />
+                android:paddingBottom="120dp" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerChats"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
-                android:paddingBottom="80dp"
+                android:paddingBottom="120dp"
                 android:visibility="gone" />
-
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/btnAddPost"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|end"
-                android:layout_margin="16dp"
-                android:layout_marginBottom="80dp"
-                android:src="@android:drawable/ic_menu_add"
-                app:tint="@android:color/white"
-                app:backgroundTint="#5288C1" />
         </FrameLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <!-- کانتینرهای صفحات دیگر -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:visibility="gone"
         android:padding="8dp"
+        android:clipToPadding="false"
+        android:paddingBottom="120dp"
         app:layout_constraintTop_toBottomOf="@id/topBar"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavContainer"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -168,8 +158,10 @@
         android:layout_height="0dp"
         android:visibility="gone"
         android:padding="16dp"
+        android:clipToPadding="false"
+        android:paddingBottom="120dp"
         app:layout_constraintTop_toBottomOf="@id/topBar"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavContainer"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -269,15 +261,16 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:visibility="gone"
+        android:clipToPadding="false"
+        android:paddingBottom="120dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavContainer"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingBottom="40dp">
+            android:layout_height="wrap_content">
 
             <View
                 android:id="@+id/profileHeader"
@@ -337,7 +330,6 @@
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp">
-
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etFullName"
                         android:layout_width="match_parent"
@@ -357,7 +349,6 @@
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusBottomEnd="12dp">
-
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etBio"
                         android:layout_width="match_parent"
@@ -397,19 +388,31 @@
                     app:backgroundTint="#10b981"
                     android:layout_marginTop="24dp" />
             </LinearLayout>
-
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
+    <!-- دکمه شناور پست جدید بالاتر از منوی نویگیشن قرار می‌گیره -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btnAddPost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="110dp"
+        android:src="@android:drawable/ic_menu_add"
+        app:tint="@android:color/white"
+        app:backgroundTint="#5288C1"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- منوی تمام شیشه‌ای، گوشه‌گرد و شناورِ رویایی -->
     <androidx.cardview.widget.CardView
         android:id="@+id/bottomNavContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="20dp"
         android:layout_marginBottom="24dp"
-        app:cardBackgroundColor="?android:attr/colorBackground"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="10dp"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">

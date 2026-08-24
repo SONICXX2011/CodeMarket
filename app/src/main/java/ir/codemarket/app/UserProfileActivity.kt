@@ -3,8 +3,9 @@ package ir.codemarket.app
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
@@ -35,8 +36,10 @@ class UserProfileActivity : AppCompatActivity() {
         targetUserId = intent.getIntExtra("user_id", -1)
         if (targetUserId == -1) { finish(); return }
 
-        binding.toolbar.setNavigationIcon(R.drawable.ic_arrow_back)
+        // تولبار رو با انیمیشن تلگرامی هماهنگ میکنیم
         binding.toolbar.setNavigationOnClickListener { finish() }
+        binding.collapsingToolbar.setExpandedTitleColor(Color.TRANSPARENT)
+        binding.collapsingToolbar.setCollapsedTitleTextColor(if (sessionManager.isDarkMode()) Color.WHITE else Color.BLACK)
 
         binding.btnCopyId.setOnClickListener {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -46,12 +49,8 @@ class UserProfileActivity : AppCompatActivity() {
         }
 
         binding.btnSendMessage.setOnClickListener {
-            // تا زمان ساخت صفحه چت، کامنت شد تا کرش نکنه
-            // val intent = Intent(this, ChatActivity::class.java)
-            // intent.putExtra("target_id", targetUserId)
-            // intent.putExtra("target_username", targetUsername)
-            // startActivity(intent)
-            Toast.makeText(this, "در حال توسعه...", Toast.LENGTH_SHORT).show()
+            // تا زمان ساخت صفحه چت (ChatActivity) در مرحله بعد، پیام میده تا کرش نکنه
+            Toast.makeText(this, "در حال ورود به چت...", Toast.LENGTH_SHORT).show()
         }
 
         loadUserData()
@@ -65,16 +64,35 @@ class UserProfileActivity : AppCompatActivity() {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
                     targetUsername = json.getString("username")
-                    val title = if (json.optBoolean("is_vip")) "🌟 $targetUsername" else targetUsername
-                    binding.toolbar.title = title
+                    val isVip = json.optBoolean("is_vip", false)
                     
-                    binding.tvUserId.text = "@$targetUsername"
+                    binding.collapsingToolbar.title = targetUsername
+                    binding.tvUsernameDisplay.text = targetUsername
+                    binding.tvUserIdDisplay.text = "@$targetUsername"
+                    
                     val bio = json.optString("bio", "")
-                    if (bio.isNotEmpty()) binding.tvUserBio.text = bio
+                    if (bio.isNotEmpty()) {
+                        binding.tvUserBioDisplay.text = bio
+                    }
+
+                    val baseUrl = NativeLib.getBaseUrl()
+                    val badgeUrl = json.optString("badge_url", "")
+                    if (isVip && badgeUrl.isNotEmpty()) {
+                        binding.imgVipBadge.visibility = View.VISIBLE
+                        Glide.with(this@UserProfileActivity).load(if (badgeUrl.startsWith("http")) badgeUrl else baseUrl + badgeUrl).into(binding.imgVipBadge)
+                    } else {
+                        binding.imgVipBadge.visibility = View.GONE
+                    }
 
                     val pic = json.optString("profile_pic", "")
                     if (pic.isNotEmpty()) {
-                        Glide.with(this@UserProfileActivity).load(if (pic.startsWith("http")) pic else NativeLib.getBaseUrl() + pic).into(binding.imgProfileCover)
+                        val fullPicUrl = if (pic.startsWith("http")) pic else baseUrl + pic
+                        Glide.with(this@UserProfileActivity)
+                            .load(fullPicUrl)
+                            .placeholder(R.drawable.ic_sun)
+                            .into(binding.imgProfileCover)
+                    } else {
+                        binding.imgProfileCover.setImageResource(R.drawable.ic_sun)
                     }
                 }
             }
