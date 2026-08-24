@@ -2,6 +2,7 @@ package ir.codemarket.app
 
 import android.app.DownloadManager
 import android.content.Context
+import android.content.Intent // >>> این همون ایمپورتی هست که جا مونده بود <<<
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -46,7 +47,7 @@ class SourceDetailsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         sessionManager = SessionManager(this)
-        markwon = MarkdownUtils.createMarkwon(this) // سیستم جدید مارک‌داون
+        markwon = MarkdownUtils.createMarkwon(this)
 
         if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
         else setTheme(R.style.Theme_CodeMarket_Light)
@@ -128,7 +129,6 @@ class SourceDetailsActivity : AppCompatActivity() {
                     
                     binding.tvDetailsDesc.textSize = sessionManager.getTextSize()
                     
-                    // تفسیر هوشمند لینک‌ها در توضیحات سورس
                     MarkdownUtils.setMarkdownText(markwon, binding.tvDetailsDesc, source.optString("description", "بدون توضیحات"))
 
                     val logoUrl = source.optString("logo", "")
@@ -405,7 +405,6 @@ class CommentsAdapter(
         
         holder.b.btnReply.setOnClickListener { onReplyClick(item) }
 
-        // کلیک روی عکس و اسم کاربر رو هدایت می‌کنه به پروفایلش
         holder.b.imgCommentUser.setOnClickListener { onUserClick(item.userId) }
         holder.b.tvCommentUsername.setOnClickListener { onUserClick(item.userId) }
 

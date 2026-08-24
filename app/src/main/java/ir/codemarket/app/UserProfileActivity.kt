@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
+import android.view.View // >>> این همون ایمپورتی هست که جا مونده بود <<<
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
@@ -29,7 +30,7 @@ class UserProfileActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         sessionManager = SessionManager(this)
-        markwon = MarkdownUtils.createMarkwon(this) // پردازش هوشمند منشن و لینک
+        markwon = MarkdownUtils.createMarkwon(this) 
 
         if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
         else setTheme(R.style.Theme_CodeMarket_Light)
@@ -37,7 +38,6 @@ class UserProfileActivity : AppCompatActivity() {
         binding = ActivityUserProfileBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // اینجا بررسی می‌کنیم که کاربر با ID اومده یا روی یه متن آیدی (@username) کلیک کرده
         targetUserId = intent.getIntExtra("user_id", -1)
         val passedUsername = intent.getStringExtra("target_username")
         if (passedUsername != null) targetUsername = passedUsername
@@ -56,7 +56,7 @@ class UserProfileActivity : AppCompatActivity() {
         }
 
         binding.btnSendMessage.setOnClickListener {
-            Toast.makeText(this, "در حال ورود به چت...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "در حال توسعه...", Toast.LENGTH_SHORT).show()
         }
 
         loadUserData()
@@ -65,7 +65,6 @@ class UserProfileActivity : AppCompatActivity() {
     private fun loadUserData() {
         val token = sessionManager.fetchAuthToken() ?: return
         
-        // اگر username داریم به جای id با username ریکوئست می‌دیم
         val apiParam = if (targetUsername.isNotEmpty()) targetUsername else targetUserId.toString()
 
         CoroutineScope(Dispatchers.Main).launch {
@@ -83,7 +82,6 @@ class UserProfileActivity : AppCompatActivity() {
                     
                     val bio = json.optString("bio", "")
                     if (bio.isNotEmpty()) {
-                        // تفسیر هوشمند مارک‌داون و آبی کردن لینک‌ها و آیدی‌های داخل بیوگرافی
                         MarkdownUtils.setMarkdownText(markwon, binding.tvUserBioDisplay, bio)
                     }
 
