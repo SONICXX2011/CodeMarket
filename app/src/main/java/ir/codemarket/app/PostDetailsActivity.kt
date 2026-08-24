@@ -36,7 +36,7 @@ class PostDetailsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         sessionManager = SessionManager(this)
-        markwon = Markwon.create(this)
+        markwon = MarkdownUtils.createMarkwon(this) // استفاده از سیستم هوشمند لینک و آیدی
 
         if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
         else setTheme(R.style.Theme_CodeMarket_Light)
@@ -44,7 +44,6 @@ class PostDetailsActivity : AppCompatActivity() {
         binding = ActivityPostDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // اعمال بک‌گراند بر اساس تم کاربر
         if (sessionManager.isDarkMode()) {
             binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
         } else {
@@ -56,7 +55,6 @@ class PostDetailsActivity : AppCompatActivity() {
 
         binding.btnBack.setOnClickListener { finish() }
 
-        // فعال کردن مارک‌داون برای اینپوت شناور جدید
         MarkdownUtils.applyMarkdownShortcuts(binding.etComment)
 
         binding.btnSendComment.setOnClickListener {
@@ -73,11 +71,19 @@ class PostDetailsActivity : AppCompatActivity() {
     }
 
     private fun setupCommentsRecyclerView() {
-        commentsAdapter = PostCommentsAdapter(commentsList, markwon, sessionManager.getTextSize())
+        commentsAdapter = PostCommentsAdapter(commentsList, markwon, sessionManager.getTextSize()) { userId ->
+            openUserProfile(userId)
+        }
         binding.recyclerComments.layoutManager = object : LinearLayoutManager(this) {
-            override fun canScrollVertically(): Boolean = false // حل مشکل اسکرول
+            override fun canScrollVertically(): Boolean = false
         }
         binding.recyclerComments.adapter = commentsAdapter
+    }
+
+    private fun openUserProfile(userId: Int) {
+        val intent = Intent(this, UserProfileActivity::class.java)
+        intent.putExtra("user_id", userId)
+        startActivity(intent)
     }
 
     private fun loadPostDetails() {
@@ -89,10 +95,17 @@ class PostDetailsActivity : AppCompatActivity() {
                 if (json.getBoolean("success")) {
                     val post = json.getJSONObject("post")
                     
+                    val postUserId = post.optInt("user_id", -1)
                     binding.tvUsername.text = post.optString("username", "کاربر")
                     
+                    // کلیک روی پست‌گذار
+                    binding.imgUserPic.setOnClickListener { openUserProfile(postUserId) }
+                    binding.tvUsername.setOnClickListener { openUserProfile(postUserId) }
+                    
                     binding.tvPostText.textSize = sessionManager.getTextSize()
-                    markwon.setMarkdown(binding.tvPostText, post.optString("text", ""))
+                    
+                    // تبدیل منشن‌ها به آیدی آبیِ قابل کلیک
+                    MarkdownUtils.setMarkdownText(markwon, binding.tvPostText, post.optString("text", ""))
                     
                     binding.tvLikeCount.text = post.optInt("like_count", 0).toString()
                     binding.tvViewsCount.text = post.optInt("views", 0).toString()
@@ -136,7 +149,14 @@ class PostDetailsActivity : AppCompatActivity() {
         commentsList.clear()
         for (i in 0 until array.length()) {
             val c = array.getJSONObject(i)
-            commentsList.add(PostCommentItem(c.optInt("id", 0), c.optString("username", "کاربر"), c.optString("user_pic", ""), c.optString("text", ""), c.optString("date", "")))
+            commentsList.add(PostCommentItem(
+                c.optInt("id", 0), 
+                c.optInt("user_id", -1), 
+                c.optString("username", "کاربر"), 
+                c.optString("user_pic", ""), 
+                c.optString("text", ""), 
+                c.optString("date", "")
+            ))
         }
         commentsAdapter.notifyDataSetChanged()
     }
@@ -162,9 +182,15 @@ class PostDetailsActivity : AppCompatActivity() {
     }
 }
 
-data class PostCommentItem(val id: Int, val username: String, val userPic: String, val text: String, val date: String)
+data class PostCommentItem(val id: Int, val userId: Int, val username: String, val userPic: String, val text: String, val date: String)
 
-class PostCommentsAdapter(private val items: List<PostCommentItem>, private val markwon: Markwon, private val size: Float) : RecyclerView.Adapter<PostCommentsAdapter.ViewHolder>() {
+class PostCommentsAdapter(
+    private val items: List<PostCommentItem>, 
+    private val markwon: Markwon, 
+    private val size: Float,
+    private val onUserClick: (Int) -> Unit
+) : RecyclerView.Adapter<PostCommentsAdapter.ViewHolder>() {
+    
     class ViewHolder(val b: ItemCommentBinding) : RecyclerView.ViewHolder(b.root)
     
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemCommentBinding.inflate(LayoutInflater.from(parent.context), parent, false))
@@ -177,7 +203,11 @@ class PostCommentsAdapter(private val items: List<PostCommentItem>, private val 
         holder.b.btnCommentOptions.visibility = View.GONE
         
         holder.b.tvCommentText.textSize = size
-        markwon.setMarkdown(holder.b.tvCommentText, item.text)
+        MarkdownUtils.setMarkdownText(markwon, holder.b.tvCommentText, item.text)
+
+        // کلیک روی عکس کاربر کامنت دهنده
+        holder.b.imgCommentUser.setOnClickListener { onUserClick(item.userId) }
+        holder.b.tvCommentUsername.setOnClickListener { onUserClick(item.userId) }
 
         val baseUrl = NativeLib.getBaseUrl()
         if (item.userPic.isNotEmpty()) {

@@ -79,7 +79,9 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         sessionManager = SessionManager(this)
-        markwon = Markwon.create(this)
+        
+        // استفاده از هوش مصنوعی لینک و منشن مارک‌داون
+        markwon = MarkdownUtils.createMarkwon(this)
 
         if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
         else setTheme(R.style.Theme_CodeMarket_Light)
@@ -87,7 +89,6 @@ class HomeActivity : AppCompatActivity() {
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // تنظیم رنگ شیشه‌ای منوی شناور بر اساس تم
         if (sessionManager.isDarkMode()) {
             binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
             binding.bottomNavContainer.setCardBackgroundColor(Color.parseColor("#E61A1A2E"))
@@ -132,7 +133,6 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
-        // هندل کردن گرافیک تب‌های بالای صفحه خانه (عمومی / شخصی)
         binding.tabPublic.setOnClickListener {
             binding.tabPublic.setTextColor(Color.parseColor("#5288C1"))
             binding.tabPublic.setTypeface(null, Typeface.BOLD)
@@ -200,11 +200,6 @@ class HomeActivity : AppCompatActivity() {
 
     private fun setupChatsView() {
         chatListAdapter = ChatListAdapter(chatItems) { chat ->
-            // تا زمان ساخت صفحه چت در مرحله بعد، کامنت شد تا کرش نکنه
-            // val intent = Intent(this, ChatActivity::class.java)
-            // intent.putExtra("target_id", chat.targetUserId)
-            // intent.putExtra("target_username", chat.targetUsername)
-            // startActivity(intent)
             Toast.makeText(this, "چت با ${chat.targetUsername} در حال توسعه...", Toast.LENGTH_SHORT).show()
         }
         binding.recyclerChats.layoutManager = LinearLayoutManager(this)
@@ -212,7 +207,6 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun loadChatsData() {
-        // دموی موقت تا زمان اتصال به بک‌اند چت
         chatItems.clear()
         chatItems.add(ChatListItem(1, 2, "ali_dev", "", "سلام خوبی؟ پروژه چطور پیش میره؟", "12:30", 2))
         chatItems.add(ChatListItem(2, 3, "sara_coder", "", "فایل‌ها رو برات فرستادم.", "دیروز", 0))
@@ -593,7 +587,9 @@ class FeedAdapter(
         holder.b.tvUsername.text = item.username
         
         holder.b.tvPostText.textSize = size
-        markwon.setMarkdown(holder.b.tvPostText, item.text)
+        
+        // جایگذاری لینک‌های آبی و آیدی‌ها در متن پست
+        MarkdownUtils.setMarkdownText(markwon, holder.b.tvPostText, item.text)
         
         holder.b.tvLikeCount.text = item.likeCount.toString()
         holder.b.tvCommentCount.text = item.commentCount.toString()
@@ -612,10 +608,13 @@ class FeedAdapter(
             try { holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg)) } catch(e: Exception) {}
         }
 
+        // اگر پست مال خودشه می‌تونه منو سه‌نقطه رو باز کنه و اگه روی عکسش بزنه می‌ره تو پروفایلش
         if (item.userId == currentUserId && currentUserId != -1) {
             holder.b.tvUsername.setCompoundDrawablesWithIntrinsicBounds(0, 0, android.R.drawable.ic_menu_more, 0)
             holder.b.tvUsername.setOnClickListener { onOptionsClick(it, item, position) }
+            holder.b.imgUserPic.setOnClickListener { onUserClick(item.userId) }
         } else {
+            // اگر پست مال شخص دیگه‌ایه با کلیک روی اسم یا عکس می‌ره تو پروفایل اون شخص
             holder.b.tvUsername.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
             holder.b.tvUsername.setOnClickListener { onUserClick(item.userId) }
             holder.b.imgUserPic.setOnClickListener { onUserClick(item.userId) }

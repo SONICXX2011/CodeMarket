@@ -46,7 +46,7 @@ class SourceDetailsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         sessionManager = SessionManager(this)
-        markwon = Markwon.create(this)
+        markwon = MarkdownUtils.createMarkwon(this) // سیستم جدید مارک‌داون
 
         if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
         else setTheme(R.style.Theme_CodeMarket_Light)
@@ -98,10 +98,17 @@ class SourceDetailsActivity : AppCompatActivity() {
         } catch (e: Exception) { }
     }
 
+    private fun openUserProfile(userId: Int) {
+        val intent = Intent(this, UserProfileActivity::class.java)
+        intent.putExtra("user_id", userId)
+        startActivity(intent)
+    }
+
     private fun setupCommentsRecyclerView() {
         commentsAdapter = CommentsAdapter(commentsList, markwon, sessionManager.getTextSize(), currentUserId,
             onOptionsClick = { view, comment, pos -> showCommentOptions(view, comment, pos) },
-            onReplyClick = { comment -> showAddCommentDialog(comment) }
+            onReplyClick = { comment -> showAddCommentDialog(comment) },
+            onUserClick = { userId -> openUserProfile(userId) }
         )
         binding.recyclerComments.layoutManager = object : LinearLayoutManager(this) {
             override fun canScrollVertically(): Boolean = false
@@ -120,7 +127,9 @@ class SourceDetailsActivity : AppCompatActivity() {
                     binding.tvDetailsName.text = source.optString("name", "نامشخص")
                     
                     binding.tvDetailsDesc.textSize = sessionManager.getTextSize()
-                    markwon.setMarkdown(binding.tvDetailsDesc, source.optString("description", "بدون توضیحات"))
+                    
+                    // تفسیر هوشمند لینک‌ها در توضیحات سورس
+                    MarkdownUtils.setMarkdownText(markwon, binding.tvDetailsDesc, source.optString("description", "بدون توضیحات"))
 
                     val logoUrl = source.optString("logo", "")
                     if (logoUrl.isNotEmpty()) {
@@ -361,7 +370,8 @@ data class CommentItem(
 class CommentsAdapter(
     private val items: List<CommentItem>, private val markwon: Markwon, private val size: Float, private val currentUserId: Int,
     private val onOptionsClick: (View, CommentItem, Int) -> Unit,
-    private val onReplyClick: (CommentItem) -> Unit
+    private val onReplyClick: (CommentItem) -> Unit,
+    private val onUserClick: (Int) -> Unit
 ) : RecyclerView.Adapter<CommentsAdapter.ViewHolder>() {
 
     class ViewHolder(val b: ItemCommentBinding) : RecyclerView.ViewHolder(b.root)
@@ -379,7 +389,7 @@ class CommentsAdapter(
         holder.b.tvCommentDate.text = TimeUtils.getTimeAgo(item.date)
         
         holder.b.tvCommentText.textSize = size
-        markwon.setMarkdown(holder.b.tvCommentText, item.text)
+        MarkdownUtils.setMarkdownText(markwon, holder.b.tvCommentText, item.text)
 
         if (item.replyToId != -1 && item.replyToUsername.isNotEmpty()) {
             holder.b.tvReplyInfo.visibility = View.VISIBLE
@@ -394,6 +404,10 @@ class CommentsAdapter(
         } else holder.b.btnCommentOptions.visibility = View.GONE
         
         holder.b.btnReply.setOnClickListener { onReplyClick(item) }
+
+        // کلیک روی عکس و اسم کاربر رو هدایت می‌کنه به پروفایلش
+        holder.b.imgCommentUser.setOnClickListener { onUserClick(item.userId) }
+        holder.b.tvCommentUsername.setOnClickListener { onUserClick(item.userId) }
 
         val baseUrl = NativeLib.getBaseUrl()
         if (item.userPic.isNotEmpty()) {
