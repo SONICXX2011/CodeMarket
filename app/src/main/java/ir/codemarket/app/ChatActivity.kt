@@ -1,20 +1,29 @@
 package ir.codemarket.app
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.text.util.Linkify
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.android.material.card.MaterialCardView
 import io.noties.markwon.Markwon
+import io.noties.markwon.linkify.LinkifyPlugin
 import ir.codemarket.app.databinding.ActivityChatBinding
 import ir.codemarket.app.databinding.ItemChatMessageBinding
 import kotlinx.coroutines.CoroutineScope
@@ -55,7 +64,12 @@ class ChatActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         sessionManager = SessionManager(this)
-        markwon = MarkdownUtils.createMarkwon(this)
+        
+        // پلاگین Linkify رو به Markwon اضافه کردم تا لینک‌ها و آیدی‌ها قابل کلیک بشن
+        markwon = Markwon.builder(this)
+            .usePlugin(LinkifyPlugin.create(Linkify.WEB_URLS or Linkify.EMAIL_ADDRESSES or Linkify.PHONE_NUMBERS))
+            .build()
+            
         extractCurrentUserId()
 
         if (sessionManager.isDarkMode()) {
@@ -86,10 +100,6 @@ class ChatActivity : AppCompatActivity() {
         }
 
         binding.btnBack.setOnClickListener { finish() }
-        binding.btnRefresh.setOnClickListener { 
-            it.animate().rotationBy(360f).setDuration(500).start()
-            loadMessages() 
-        }
 
         binding.imgChatTargetPic.setOnClickListener { 
             if (targetUserId != currentUserId) {
@@ -103,7 +113,7 @@ class ChatActivity : AppCompatActivity() {
 
         MarkdownUtils.applyMarkdownShortcuts(binding.etMessage)
 
-        binding.btnAttach.setOnClickListener { pickMedia.launch(arrayOf("image/*", "video/*")) }
+        binding.btnAttach.setOnClickListener { pickMedia.launch(arrayOf("image/*", "video/*", "audio/*")) }
         
         binding.btnCancelMedia.setOnClickListener {
             selectedMediaUri = null
@@ -139,17 +149,91 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        chatAdapter = ChatMessagesAdapter(messagesList, markwon, sessionManager.getTextSize(), currentUserId) { msg ->
-            replyToId = msg.id
-            binding.layoutReplyPreview.visibility = View.VISIBLE
-            binding.tvReplyPreviewName.text = if(msg.senderId == currentUserId) "شما" else targetUsername
-            binding.tvReplyPreviewText.text = if(msg.text.isNotEmpty()) msg.text else "رسانه"
-            binding.etMessage.requestFocus()
-        }
+        chatAdapter = ChatMessagesAdapter(
+            messagesList, 
+            markwon, 
+            sessionManager.getTextSize(), 
+            currentUserId,
+            onReplyClick = { msg -> startReply(msg) },
+            onMessageLongClick = { view, msg, position -> showMessageOptions(view, msg, position) }
+        )
         val layoutManager = LinearLayoutManager(this)
         layoutManager.stackFromEnd = true
         binding.recyclerChat.layoutManager = layoutManager
         binding.recyclerChat.adapter = chatAdapter
+    }
+    
+    private fun startReply(msg: ChatMessageItem) {
+        replyToId = msg.id
+        binding.layoutReplyPreview.visibility = View.VISIBLE
+        binding.tvReplyPreviewName.text = if(msg.senderId == currentUserId) "شما" else targetUsername
+        binding.tvReplyPreviewText.text = if(msg.text.isNotEmpty()) msg.text else "رسانه"
+        binding.etMessage.requestFocus()
+    }
+
+    // --- منوی تلگرامی برای نگه‌داشتن روی پیام ---
+    private fun showMessageOptions(view: View, msg: ChatMessageItem, position: Int) {
+        val popup = PopupMenu(this, view)
+        popup.menu.add("پاسخ دادن (Reply)")
+        if (msg.text.isNotEmpty()) popup.menu.add("کپی متن")
+        
+        if (msg.senderId == currentUserId) {
+            if (msg.text.isNotEmpty()) popup.menu.add("ویرایش")
+            popup.menu.add("حذف")
+        }
+        
+        popup.setOnMenuItemClickListener { item ->
+            when (item.title) {
+                "پاسخ دادن (Reply)" -> startReply(msg)
+                "کپی متن" -> {
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText("Message Text", msg.text)
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(this, "متن پیام کپی شد", Toast.LENGTH_SHORT).show()
+                }
+                "ویرایش" -> editMessage(msg, position)
+                "حذف" -> deleteMessage(msg.id, position)
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun deleteMessage(msgId: Int, position: Int) {
+        val token = sessionManager.fetchAuthToken() ?: return
+        CoroutineScope(Dispatchers.Main).launch {
+            val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/chats/message/$msgId/delete", "{}", token) }
+            if (res != null && JSONObject(res).getBoolean("success")) {
+                messagesList.removeAt(position)
+                chatAdapter.notifyItemRemoved(position)
+            }
+        }
+    }
+
+    private fun editMessage(msg: ChatMessageItem, position: Int) {
+        val editText = EditText(this).apply {
+            setText(msg.text)
+            setPadding(40, 40, 40, 40)
+        }
+        MarkdownUtils.applyMarkdownShortcuts(editText)
+
+        AlertDialog.Builder(this)
+            .setTitle("ویرایش پیام")
+            .setView(editText)
+            .setPositiveButton("ثبت") { _, _ ->
+                val newText = editText.text.toString()
+                val token = sessionManager.fetchAuthToken() ?: return@setPositiveButton
+                CoroutineScope(Dispatchers.Main).launch {
+                    val payload = JSONObject().put("text", newText).toString()
+                    val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/chats/message/${msg.id}/edit", payload, token) }
+                    if (res != null && JSONObject(res).getBoolean("success")) {
+                        messagesList[position] = messagesList[position].copy(text = newText, isEdited = true)
+                        chatAdapter.notifyItemChanged(position)
+                    }
+                }
+            }
+            .setNegativeButton("لغو", null)
+            .show()
     }
 
     private fun loadMessages() {
@@ -181,7 +265,8 @@ class ChatActivity : AppCompatActivity() {
                 c.optString("reply_to_username", ""),
                 c.optString("reply_to_text", ""),
                 c.optString("date", ""),
-                c.optBoolean("is_read", false)
+                c.optBoolean("is_read", false),
+                c.optBoolean("is_edited", false)
             ))
         }
         chatAdapter.notifyDataSetChanged()
@@ -222,7 +307,7 @@ class ChatActivity : AppCompatActivity() {
                     }
 
                     val mimeType = contentResolver.getType(mediaUri) ?: "application/octet-stream"
-                    val ext = if (mimeType.contains("video")) "mp4" else "jpg"
+                    val ext = if (mimeType.contains("video")) "mp4" else if (mimeType.contains("audio")) "mp3" else "jpg"
                     outputStream.writeBytes("--$boundary\r\n")
                     outputStream.writeBytes("Content-Disposition: form-data; name=\"media\"; filename=\"upload.$ext\"\r\n")
                     outputStream.writeBytes("Content-Type: $mimeType\r\n\r\n")
@@ -256,12 +341,16 @@ class ChatActivity : AppCompatActivity() {
 
 data class ChatMessageItem(
     val id: Int, val senderId: Int, val text: String, val media: String, val mediaType: String,
-    val replyToId: Int, val replyToUsername: String, val replyToText: String, val date: String, val isRead: Boolean
+    val replyToId: Int, val replyToUsername: String, val replyToText: String, val date: String, val isRead: Boolean, val isEdited: Boolean
 )
 
 class ChatMessagesAdapter(
-    private val items: List<ChatMessageItem>, private val markwon: Markwon, private val size: Float, private val currentUserId: Int,
-    private val onReplyClick: (ChatMessageItem) -> Unit
+    private val items: List<ChatMessageItem>, 
+    private val markwon: Markwon, 
+    private val size: Float, 
+    private val currentUserId: Int,
+    private val onReplyClick: (ChatMessageItem) -> Unit,
+    private val onMessageLongClick: (View, ChatMessageItem, Int) -> Unit
 ) : RecyclerView.Adapter<ChatMessagesAdapter.ViewHolder>() {
     
     class ViewHolder(val b: ItemChatMessageBinding) : RecyclerView.ViewHolder(b.root)
@@ -277,7 +366,6 @@ class ChatMessagesAdapter(
         if (isMe) {
             holder.b.cardMessageBubble.setCardBackgroundColor(Color.parseColor("#225288C1"))
             holder.b.imgMessageStatus.visibility = View.VISIBLE
-            // رفع باگ اصلی: استفاده از آیکون پیش‌فرض اندروید به جای ic_tick
             holder.b.imgMessageStatus.setImageResource(android.R.drawable.checkbox_on_background)
         } else {
             holder.b.cardMessageBubble.setCardBackgroundColor(Color.parseColor("#1A888888"))
@@ -287,12 +375,14 @@ class ChatMessagesAdapter(
         if (item.text.isNotEmpty()) {
             holder.b.tvMessageText.visibility = View.VISIBLE
             holder.b.tvMessageText.textSize = size
+            // مارک‌داون + لینک‌های قابل کلیک
             MarkdownUtils.setMarkdownText(markwon, holder.b.tvMessageText, item.text)
         } else {
             holder.b.tvMessageText.visibility = View.GONE
         }
 
-        holder.b.tvMessageTime.text = TimeUtils.getTimeAgo(item.date)
+        val editMark = if (item.isEdited) " (ویرایش شده) " else " "
+        holder.b.tvMessageTime.text = TimeUtils.getTimeAgo(item.date) + editMark
 
         if (item.replyToId != -1 && item.replyToUsername.isNotEmpty()) {
             holder.b.layoutReplyQuote.visibility = View.VISIBLE
@@ -303,30 +393,59 @@ class ChatMessagesAdapter(
         }
 
         if (item.media.isNotEmpty()) {
-            holder.b.layoutMedia.visibility = View.VISIBLE
             val fullMediaUrl = if (item.media.startsWith("http")) item.media else NativeLib.getBaseUrl() + item.media
-            Glide.with(holder.b.root.context).load(fullMediaUrl).into(holder.b.imgMessageMedia)
             
-            if (item.mediaType == "video" || item.mediaType == "voice") {
-                holder.b.imgPlayVideo.visibility = View.VISIBLE
-                holder.b.tvMediaInfo.visibility = View.VISIBLE
-                holder.b.tvMediaInfo.text = if (item.mediaType == "voice") "ویس" else "ویدیو"
+            if (item.mediaType == "voice") {
+                holder.b.layoutVoice.visibility = View.VISIBLE
+                holder.b.layoutMedia.visibility = View.GONE
+                
+                holder.b.btnPlayVoice.setOnClickListener {
+                    val intent = Intent(Intent.ACTION_VIEW)
+                    intent.setDataAndType(Uri.parse(fullMediaUrl), "audio/*")
+                    holder.b.root.context.startActivity(intent)
+                }
             } else {
-                holder.b.imgPlayVideo.visibility = View.GONE
-                holder.b.tvMediaInfo.visibility = View.GONE
-            }
+                holder.b.layoutMedia.visibility = View.VISIBLE
+                holder.b.layoutVoice.visibility = View.GONE
+                
+                Glide.with(holder.b.root.context).load(fullMediaUrl).into(holder.b.imgMessageMedia)
+                
+                if (item.mediaType == "video") {
+                    holder.b.viewMediaOverlay.visibility = View.VISIBLE
+                    holder.b.imgPlayVideo.visibility = View.VISIBLE
+                    holder.b.tvMediaInfo.visibility = View.VISIBLE
+                    holder.b.tvMediaInfo.text = "ویدیو" 
+                } else {
+                    holder.b.viewMediaOverlay.visibility = View.GONE
+                    holder.b.imgPlayVideo.visibility = View.GONE
+                    holder.b.tvMediaInfo.visibility = View.GONE
+                }
 
-            holder.b.imgMessageMedia.setOnClickListener {
-                val intent = Intent(Intent.ACTION_VIEW)
-                val type = if (item.mediaType == "video") "video/*" else if (item.mediaType == "voice") "audio/*" else "image/*"
-                intent.setDataAndType(Uri.parse(fullMediaUrl), type)
-                holder.b.root.context.startActivity(intent)
+                holder.b.imgMessageMedia.setOnClickListener {
+                    val intent = Intent(Intent.ACTION_VIEW)
+                    val type = if (item.mediaType == "video") "video/*" else "image/*"
+                    intent.setDataAndType(Uri.parse(fullMediaUrl), type)
+                    holder.b.root.context.startActivity(intent)
+                }
             }
         } else {
             holder.b.layoutMedia.visibility = View.GONE
+            holder.b.layoutVoice.visibility = View.GONE
         }
 
+        // --- کلیک برای ریپلای ---
         holder.b.cardMessageBubble.setOnClickListener { onReplyClick(item) }
+        holder.b.tvMessageText.setOnClickListener { onReplyClick(item) }
+
+        // --- نگه‌داشتن طولانی برای پاپ‌آپ منو ---
+        holder.b.cardMessageBubble.setOnLongClickListener {
+            onMessageLongClick(it, item, position)
+            true
+        }
+        holder.b.tvMessageText.setOnLongClickListener {
+            onMessageLongClick(it, item, position)
+            true
+        }
     }
     
     override fun getItemCount(): Int = items.size

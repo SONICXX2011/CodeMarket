@@ -157,6 +157,7 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
+        // --- منطق تب‌های خانه (عمومی / شخصی) ---
         binding.tabPublic.setOnClickListener {
             binding.tabPublic.setTextColor(Color.parseColor("#5288C1"))
             binding.tabPublic.setTypeface(null, Typeface.BOLD)
@@ -235,7 +236,7 @@ class HomeActivity : AppCompatActivity() {
             val (res, _) = withContext(Dispatchers.IO) { ApiClient.getRequest("/api/chats", token) }
             
             chatItems.clear()
-            // پیام‌های ذخیره شده (همیشه اولین آیتم)
+            // پیام‌های ذخیره شده به عنوان اولین آیتم
             chatItems.add(ChatListItem(
                 id = 0, targetUserId = currentUserId, targetUsername = "پیام‌های ذخیره شده",
                 targetPic = "", lastMessage = "یادداشت‌ها و فایل‌های شخصی", date = "", unreadCount = 0
@@ -609,10 +610,10 @@ class HomeActivity : AppCompatActivity() {
                     val picUrl = json.optString("profile_pic", "")
                     if (picUrl.isNotEmpty()) {
                         val fullPicUrl = if (picUrl.startsWith("http")) picUrl else NativeLib.getBaseUrl() + picUrl
-                        Glide.with(this@HomeActivity).load(fullPicUrl).placeholder(R.drawable.ic_sun).into(binding.imgProfile)
+                        Glide.with(this@HomeActivity).load(fullPicUrl).placeholder(R.drawable.my_icon).into(binding.imgProfile)
                     }
                     
-                    // فراخوانی لود چت‌ها بعد از گرفتن آیدی خودمون برای "پیام‌های ذخیره شده"
+                    // فراخوانی لود چت‌ها بعد از گرفتن آیدی
                     loadChatsData()
                 }
             }
@@ -663,10 +664,10 @@ class ChatListAdapter(private val items: List<ChatListItem>, private val onClick
             holder.b.imgChatUser.setImageResource(android.R.drawable.ic_menu_save)
             holder.b.imgChatUser.setColorFilter(Color.parseColor("#5288C1"))
         } else if (item.targetPic.isNotEmpty()) {
-            Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.ic_sun).into(holder.b.imgChatUser)
+            Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.my_icon).into(holder.b.imgChatUser)
             holder.b.imgChatUser.clearColorFilter()
         } else {
-            holder.b.imgChatUser.setImageResource(R.drawable.ic_sun)
+            holder.b.imgChatUser.setImageResource(R.drawable.my_icon)
             holder.b.imgChatUser.clearColorFilter()
         }
         
@@ -685,7 +686,7 @@ class ShopAdapter(private val items: List<ShopItem>, private val onClick: (Int) 
         holder.b.root.setOnClickListener { onClick(position) }
         holder.b.btnShowDetails.setOnClickListener { onClick(position) }
         val fullLogoUrl = if (item.logo.startsWith("http")) item.logo else NativeLib.getBaseUrl() + item.logo
-        Glide.with(holder.b.root.context).load(fullLogoUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgSourceLogo)
+        Glide.with(holder.b.root.context).load(fullLogoUrl).placeholder(R.drawable.my_icon).into(holder.b.imgSourceLogo)
     }
     override fun getItemCount(): Int = items.size
 }
@@ -759,9 +760,9 @@ class FeedAdapter(
 
         if (item.userPic.isNotEmpty()) {
             val picUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
-            Glide.with(holder.b.root.context).load(picUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgUserPic)
+            Glide.with(holder.b.root.context).load(picUrl).placeholder(R.drawable.my_icon).into(holder.b.imgUserPic)
         } else {
-            holder.b.imgUserPic.setImageResource(R.drawable.ic_sun)
+            holder.b.imgUserPic.setImageResource(R.drawable.my_icon)
         }
         
         if (item.media.isNotEmpty() && item.mediaType == "image") {

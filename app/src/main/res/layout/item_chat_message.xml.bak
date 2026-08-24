@@ -23,7 +23,6 @@
             android:orientation="vertical"
             android:padding="10dp">
 
-            <!-- بخش نقل قول (ریپلای خط دار) -->
             <LinearLayout
                 android:id="@+id/layoutReplyQuote"
                 android:layout_width="match_parent"
@@ -42,9 +41,8 @@
                     android:layout_width="wrap_content" 
                     android:layout_height="wrap_content" 
                     android:orientation="vertical" 
-                    android:paddingHorizontal="8dp" 
+                    android:paddingHorizontal="8dp"
                     android:paddingVertical="4dp">
-                    
                     <TextView 
                         android:id="@+id/tvReplyUsernameQuote" 
                         android:layout_width="wrap_content" 
@@ -52,7 +50,6 @@
                         android:textColor="#5288C1" 
                         android:textStyle="bold" 
                         android:textSize="12sp" />
-                        
                     <TextView 
                         android:id="@+id/tvReplyTextQuote" 
                         android:layout_width="wrap_content" 
@@ -64,7 +61,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- بخش مدیا (ویدیو و عکس با تایمر و حجم) -->
             <FrameLayout
                 android:id="@+id/layoutMedia"
                 android:layout_width="wrap_content"
@@ -85,7 +81,6 @@
                         android:scaleType="centerCrop" 
                         android:background="#1A000000" />
                         
-                    <!-- هاله تیره روی ویدیوها -->
                     <View
                         android:id="@+id/viewMediaOverlay"
                         android:layout_width="match_parent"
@@ -94,7 +89,6 @@
                         android:visibility="gone"/>
                 </androidx.cardview.widget.CardView>
 
-                <!-- آیکون پخش در وسط ویدیو -->
                 <ImageView 
                     android:id="@+id/imgPlayVideo" 
                     android:layout_width="56dp" 
@@ -107,7 +101,6 @@
                     app:tint="@android:color/white" 
                     android:visibility="gone"/>
 
-                <!-- حجم و تایم گوشه بالا چپ -->
                 <TextView 
                     android:id="@+id/tvMediaInfo" 
                     android:layout_width="wrap_content" 
@@ -124,7 +117,6 @@
                     android:visibility="gone"/>
             </FrameLayout>
 
-            <!-- پلیر ویس (پخش پیام صوتی) -->
             <LinearLayout
                 android:id="@+id/layoutVoice"
                 android:layout_width="240dp"
@@ -162,7 +154,6 @@
                 android:textSize="15sp"
                 android:lineSpacingExtra="4dp" />
 
-            <!-- بخش زمان پیام و تیک خوانده شدن -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -170,7 +161,6 @@
                 android:layout_gravity="end"
                 android:gravity="center_vertical"
                 android:layout_marginTop="4dp">
-                
                 <TextView 
                     android:id="@+id/tvMessageTime" 
                     android:layout_width="wrap_content" 
@@ -179,6 +169,7 @@
                     android:textStyle="bold"
                     android:textSize="10sp" />
                 
+                <!-- اصلاح آیکون تیک چت -->
                 <ImageView 
                     android:id="@+id/imgMessageStatus" 
                     android:layout_width="14dp" 
@@ -188,7 +179,6 @@
                     app:tint="#5288C1" 
                     android:visibility="gone"/>
             </LinearLayout>
-            
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </LinearLayout>

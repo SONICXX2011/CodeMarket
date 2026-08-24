@@ -3,8 +3,10 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground">
 
+    <!-- نوار شیشه‌ای بالای چت -->
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
@@ -18,65 +20,82 @@
 
         <ImageView
             android:id="@+id/btnBack"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="6dp"
-            android:src="@drawable/ic_arrow_back"
+            android:padding="8dp"
+            android:src="@android:drawable/ic_menu_revert"
             app:tint="?android:attr/textColorPrimary" />
 
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/imgChatTargetPic"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:layout_marginStart="8dp"
-            android:src="@drawable/ic_sun"
+            android:src="@drawable/my_icon"
             app:civ_border_color="#5288C1"
             app:civ_border_width="1dp" />
 
-        <TextView
-            android:id="@+id/tvChatTargetName"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="کاربر"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
+            
+            <TextView
+                android:id="@+id/tvChatTargetName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="کاربر"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+                
+            <TextView
+                android:id="@+id/tvChatTargetStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="آنلاین"
+                android:textColor="#5288C1"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <ImageView
-            android:id="@+id/btnRefresh"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:id="@+id/btnChatOptions"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="6dp"
-            android:src="@android:drawable/ic_popup_sync"
+            android:padding="8dp"
+            android:src="@android:drawable/ic_menu_more"
             app:tint="?android:attr/textColorPrimary" />
     </LinearLayout>
 
+    <!-- لیست پیام‌ها -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerChat"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:paddingTop="8dp"
-        android:paddingBottom="100dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:paddingBottom="16dp"
+        app:layout_constraintBottom_toTopOf="@id/bottomInputLayout"
         app:layout_constraintTop_toBottomOf="@id/topBar" />
 
-    <!-- نوار پایینی ارسال پیام با همون گرافیک صفحه کامنت‌ها -->
+    <!-- بخش نوشتن پیام، ارسال، ریپلای و وویس -->
     <LinearLayout
+        android:id="@+id/bottomInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="16dp"
+        android:paddingHorizontal="12dp"
+        android:paddingBottom="12dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <androidx.cardview.widget.CardView
+        <!-- پیش نمایش ریپلای پیام -->
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/layoutReplyPreview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -85,17 +104,54 @@
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             android:visibility="gone">
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="12dp" android:gravity="center_vertical">
-                <View android:layout_width="4dp" android:layout_height="match_parent" android:background="#5288C1" />
-                <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginStart="12dp">
-                    <TextView android:id="@+id/tvReplyPreviewName" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#5288C1" android:textStyle="bold" android:textSize="13sp" />
-                    <TextView android:id="@+id/tvReplyPreviewText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@android:color/white" android:textSize="13sp" android:maxLines="1" android:ellipsize="end" />
+            
+            <LinearLayout 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
+                android:orientation="horizontal" 
+                android:padding="12dp" 
+                android:gravity="center_vertical">
+                
+                <View 
+                    android:layout_width="4dp" 
+                    android:layout_height="match_parent" 
+                    android:background="#5288C1" />
+                    
+                <LinearLayout 
+                    android:layout_width="0dp" 
+                    android:layout_weight="1" 
+                    android:layout_height="wrap_content" 
+                    android:orientation="vertical" 
+                    android:layout_marginStart="12dp">
+                    <TextView 
+                        android:id="@+id/tvReplyPreviewName" 
+                        android:layout_width="wrap_content" 
+                        android:layout_height="wrap_content" 
+                        android:textColor="#5288C1" 
+                        android:textStyle="bold" 
+                        android:textSize="13sp" />
+                    <TextView 
+                        android:id="@+id/tvReplyPreviewText" 
+                        android:layout_width="wrap_content" 
+                        android:layout_height="wrap_content" 
+                        android:textColor="@android:color/white" 
+                        android:textSize="13sp" 
+                        android:maxLines="1" 
+                        android:ellipsize="end" />
                 </LinearLayout>
-                <ImageView android:id="@+id/btnCancelReply" android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_close_clear_cancel" app:tint="@android:color/white" android:background="?attr/selectableItemBackgroundBorderless" />
+                
+                <ImageView 
+                    android:id="@+id/btnCancelReply" 
+                    android:layout_width="24dp" 
+                    android:layout_height="24dp" 
+                    android:src="@android:drawable/ic_menu_close_clear_cancel" 
+                    app:tint="@android:color/white" 
+                    android:background="?attr/selectableItemBackgroundBorderless" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <androidx.cardview.widget.CardView
+        <!-- پیش نمایش مدیا انتخاب شده قبل از ارسال -->
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/layoutMediaPreview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -105,22 +161,88 @@
             app:cardElevation="0dp"
             android:visibility="gone">
             <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                <ImageView android:id="@+id/imgMediaPreview" android:layout_width="100dp" android:layout_height="100dp" android:scaleType="centerCrop" android:layout_margin="12dp" />
-                <ImageView android:id="@+id/btnCancelMedia" android:layout_width="24dp" android:layout_height="24dp" android:src="@android:drawable/ic_menu_close_clear_cancel" app:tint="@android:color/white" android:background="@drawable/bg_circle_glass" android:backgroundTint="#80000000" android:layout_margin="16dp" />
+                <ImageView 
+                    android:id="@+id/imgMediaPreview" 
+                    android:layout_width="100dp" 
+                    android:layout_height="100dp" 
+                    android:scaleType="centerCrop" 
+                    android:layout_margin="12dp" />
+                <ImageView 
+                    android:id="@+id/btnCancelMedia" 
+                    android:layout_width="24dp" 
+                    android:layout_height="24dp" 
+                    android:src="@android:drawable/ic_menu_close_clear_cancel" 
+                    app:tint="@android:color/white" 
+                    android:background="@drawable/bg_circle_glass" 
+                    android:backgroundTint="#80000000" 
+                    android:layout_margin="16dp" />
             </FrameLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <androidx.cardview.widget.CardView
+        <!-- نوار تایپ شیشه‌ای، گیره آپلود و دکمه ویس -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="#E61A1A2E"
+            app:cardBackgroundColor="#0D888888"
             app:cardCornerRadius="28dp"
-            app:cardElevation="10dp">
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="16dp" android:paddingVertical="8dp">
-                <ImageView android:id="@+id/btnAttach" android:layout_width="32dp" android:layout_height="32dp" android:src="@android:drawable/ic_menu_gallery" android:background="?attr/selectableItemBackgroundBorderless" app:tint="#80FFFFFF" android:padding="4dp"/>
-                <EditText android:id="@+id/etMessage" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@null" android:hint="پیام شما..." android:textColorHint="#99FFFFFF" android:textColor="@android:color/white" android:textSize="15sp" android:maxLines="4" android:paddingHorizontal="12dp" android:paddingVertical="8dp" />
-                <ImageView android:id="@+id/btnSendMessage" android:layout_width="40dp" android:layout_height="40dp" android:layout_marginStart="8dp" android:background="@drawable/bg_circle_glass" android:src="@android:drawable/ic_menu_send" android:padding="8dp" app:tint="#5288C1" />
+            app:cardElevation="0dp"
+            app:strokeColor="#1A888888"
+            app:strokeWidth="1dp">
+            
+            <LinearLayout 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
+                android:orientation="horizontal" 
+                android:gravity="center_vertical" 
+                android:paddingHorizontal="8dp" 
+                android:paddingVertical="4dp">
+                
+                <ImageView 
+                    android:id="@+id/btnAttach" 
+                    android:layout_width="40dp" 
+                    android:layout_height="40dp" 
+                    android:src="@android:drawable/ic_menu_gallery" 
+                    android:background="?attr/selectableItemBackgroundBorderless" 
+                    app:tint="?android:attr/textColorSecondary" 
+                    android:padding="8dp"/>
+                    
+                <EditText 
+                    android:id="@+id/etMessage" 
+                    android:layout_width="0dp" 
+                    android:layout_height="wrap_content" 
+                    android:layout_weight="1" 
+                    android:background="@null" 
+                    android:hint="پیام..." 
+                    android:textColorHint="?android:attr/textColorSecondary" 
+                    android:textColor="?android:attr/textColorPrimary" 
+                    android:textSize="16sp" 
+                    android:maxLines="4" 
+                    android:paddingHorizontal="8dp" 
+                    android:paddingVertical="12dp" />
+                    
+                <ImageView 
+                    android:id="@+id/btnSendMessage" 
+                    android:layout_width="44dp" 
+                    android:layout_height="44dp" 
+                    android:layout_marginStart="4dp" 
+                    android:background="@drawable/bg_circle_glass" 
+                    android:backgroundTint="#1A5288C1" 
+                    android:src="@android:drawable/ic_menu_send" 
+                    android:padding="10dp" 
+                    app:tint="#5288C1" 
+                    android:visibility="gone" />
+                    
+                <ImageView 
+                    android:id="@+id/btnMic" 
+                    android:layout_width="44dp" 
+                    android:layout_height="44dp" 
+                    android:layout_marginStart="4dp" 
+                    android:background="@drawable/bg_circle_glass" 
+                    android:backgroundTint="#1A5288C1" 
+                    android:src="@android:drawable/ic_btn_speak_now" 
+                    android:padding="10dp" 
+                    app:tint="#5288C1" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

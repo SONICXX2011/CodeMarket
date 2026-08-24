@@ -19,8 +19,8 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@drawable/my_icon"
+        android:roundIcon="@drawable/my_icon"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.CodeMarket"
@@ -28,7 +28,7 @@
         android:requestLegacyExternalStorage="true"
         tools:targetApi="31">
 
-        <!-- صفحه لاگین (نقطه شروع برنامه - مشکل از اینجا بود که حل شد) -->
+        <!-- صفحه لاگین به عنوان نقطه شروع برنامه -->
         <activity
             android:name=".LoginActivity"
             android:exported="true"
@@ -39,53 +39,44 @@
             </intent-filter>
         </activity>
 
-        <!-- صفحه ثبت نام -->
         <activity
             android:name=".RegisterActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- اکتیویتی خانه (دیگر نقطه شروع نیست) -->
         <activity
             android:name=".HomeActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustPan" />
 
-        <!-- اکتیویتی چت تلگرامی -->
         <activity
             android:name=".ChatActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- اکتیویتی جزئیات پست -->
         <activity
             android:name=".PostDetailsActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- اکتیویتی جزئیات سورس در فروشگاه -->
         <activity
             android:name=".SourceDetailsActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- اکتیویتی ارسال پست جدید -->
         <activity
             android:name=".CreatePostActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- اکتیویتی پروفایل کاربران -->
         <activity
             android:name=".UserProfileActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- اکتیویتی تنظیمات و شخصی‌سازی VIP -->
         <activity
             android:name=".SettingsActivity"
             android:exported="false" />
 
     </application>
-
 </manifest>
