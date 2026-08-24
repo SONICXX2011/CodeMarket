@@ -46,10 +46,12 @@ class UserProfileActivity : AppCompatActivity() {
         }
 
         binding.btnSendMessage.setOnClickListener {
-            val intent = Intent(this, ChatActivity::class.java)
-            intent.putExtra("target_id", targetUserId)
-            intent.putExtra("target_username", targetUsername)
-            startActivity(intent)
+            // تا زمان ساخت صفحه چت، کامنت شد تا کرش نکنه
+            // val intent = Intent(this, ChatActivity::class.java)
+            // intent.putExtra("target_id", targetUserId)
+            // intent.putExtra("target_username", targetUsername)
+            // startActivity(intent)
+            Toast.makeText(this, "در حال توسعه...", Toast.LENGTH_SHORT).show()
         }
 
         loadUserData()

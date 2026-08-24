@@ -16,44 +16,15 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- باکس نقل قول تلگرامی -->
-        <LinearLayout
-            android:id="@+id/layoutReplyQuote"
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tvReplyInfo"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:background="#1A5288C1"
+            android:textColor="#5288C1"
+            android:textSize="12sp"
+            android:textStyle="italic"
             android:visibility="gone"
-            android:layout_marginBottom="12dp">
-            
-            <View
-                android:layout_width="4dp"
-                android:layout_height="match_parent"
-                android:background="#5288C1" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="8dp">
-                
-                <TextView
-                    android:id="@+id/tvReplyUsernameQuote"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="#5288C1"
-                    android:textStyle="bold"
-                    android:textSize="12sp" />
-                <TextView
-                    android:id="@+id/tvReplyTextQuote"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="?android:attr/textColorSecondary"
-                    android:textSize="12sp"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
-            </LinearLayout>
-        </LinearLayout>
+            android:layout_marginBottom="8dp"/>
 
         <LinearLayout
             android:layout_width="match_parent"

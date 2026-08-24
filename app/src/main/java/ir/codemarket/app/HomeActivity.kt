@@ -2,6 +2,7 @@ package ir.codemarket.app
 
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -45,7 +46,6 @@ class HomeActivity : AppCompatActivity() {
     private val feedItems = mutableListOf<FeedItem>()
     private lateinit var feedAdapter: FeedAdapter
 
-    // لیست چت‌ها
     private val chatItems = mutableListOf<ChatListItem>()
     private lateinit var chatListAdapter: ChatListAdapter
     
@@ -108,7 +108,7 @@ class HomeActivity : AppCompatActivity() {
                 currentPage = 1
                 loadFeedData()
             } else {
-                loadChatsData() // آپدیت لیست چت‌ها
+                loadChatsData() 
             }
         }
 
@@ -126,14 +126,13 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
-        // هندل کردن تب‌های بالای بخش خانه (عمومی / شخصی)
         binding.tabPublic.setOnClickListener {
             binding.tabPublic.setTextColor(Color.parseColor("#5288C1"))
-            binding.tabPublic.textStyle = android.graphics.Typeface.BOLD
+            binding.tabPublic.setTypeface(null, Typeface.BOLD) // حل ارور textStyle
             binding.tabPublic.setBackgroundResource(R.drawable.bg_glass_input)
             
             binding.tabPrivate.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
-            binding.tabPrivate.textStyle = android.graphics.Typeface.NORMAL
+            binding.tabPrivate.setTypeface(null, Typeface.NORMAL) // حل ارور textStyle
             binding.tabPrivate.setBackgroundColor(Color.TRANSPARENT)
 
             binding.recyclerFeed.visibility = View.VISIBLE
@@ -143,11 +142,11 @@ class HomeActivity : AppCompatActivity() {
 
         binding.tabPrivate.setOnClickListener {
             binding.tabPrivate.setTextColor(Color.parseColor("#5288C1"))
-            binding.tabPrivate.textStyle = android.graphics.Typeface.BOLD
+            binding.tabPrivate.setTypeface(null, Typeface.BOLD) // حل ارور textStyle
             binding.tabPrivate.setBackgroundResource(R.drawable.bg_glass_input)
             
             binding.tabPublic.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
-            binding.tabPublic.textStyle = android.graphics.Typeface.NORMAL
+            binding.tabPublic.setTypeface(null, Typeface.NORMAL) // حل ارور textStyle
             binding.tabPublic.setBackgroundColor(Color.TRANSPARENT)
 
             binding.recyclerFeed.visibility = View.GONE
@@ -194,17 +193,18 @@ class HomeActivity : AppCompatActivity() {
 
     private fun setupChatsView() {
         chatListAdapter = ChatListAdapter(chatItems) { chat ->
-            val intent = Intent(this, ChatActivity::class.java)
-            intent.putExtra("target_id", chat.targetUserId)
-            intent.putExtra("target_username", chat.targetUsername)
-            startActivity(intent)
+            // فعلاً برای جلوگیری از ارور کامپایل، این خط رو کامنت کردم تا ChatActivity رو تو پیام بعدی بسازیم
+            // val intent = Intent(this, ChatActivity::class.java)
+            // intent.putExtra("target_id", chat.targetUserId)
+            // intent.putExtra("target_username", chat.targetUsername)
+            // startActivity(intent)
+            Toast.makeText(this, "چت با ${chat.targetUsername} در حال توسعه...", Toast.LENGTH_SHORT).show()
         }
         binding.recyclerChats.layoutManager = LinearLayoutManager(this)
         binding.recyclerChats.adapter = chatListAdapter
     }
 
     private fun loadChatsData() {
-        // فعلاً دمو برای نمایش UI بدون کرش تا وصل شدن به بک‌اند اصلی
         chatItems.clear()
         chatItems.add(ChatListItem(1, 2, "ali_dev", "", "سلام خوبی؟ پروژه چطور پیش میره؟", "12:30", 2))
         chatItems.add(ChatListItem(2, 3, "sara_coder", "", "فایل‌ها رو برات فرستادم.", "دیروز", 0))
@@ -594,7 +594,6 @@ class FeedAdapter(
         val editStatus = if (item.isEdited) " (ویرایش شده)" else ""
         holder.b.tvPostDate.text = TimeUtils.getTimeAgo(item.createdAt) + editStatus
 
-        // اعمال بک‌گراند کاستوم و تیک آبی VIP
         val baseUrl = NativeLib.getBaseUrl()
         if (item.isVip && item.badgeUrl.isNotEmpty()) {
             holder.b.imgBadge.visibility = View.VISIBLE
