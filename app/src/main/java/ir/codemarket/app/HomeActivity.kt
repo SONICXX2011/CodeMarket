@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -624,8 +625,11 @@ class ChatListAdapter(private val items: List<ChatListItem>, private val onClick
         holder.b.tvUnreadCount.visibility = if (item.unreadCount > 0) View.VISIBLE else View.GONE
         holder.b.tvUnreadCount.text = item.unreadCount.toString()
         val baseUrl = NativeLib.getBaseUrl()
-        if (item.targetPic.isNotEmpty()) Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.ic_sun).into(holder.b.imgChatUser)
-        else holder.b.imgChatUser.setImageResource(R.drawable.ic_sun)
+        if (item.targetPic.isNotEmpty()) {
+            Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.ic_sun).into(holder.b.imgChatUser)
+        } else {
+            holder.b.imgChatUser.setImageResource(R.drawable.ic_sun)
+        }
         holder.b.root.setOnClickListener { onClick(item) }
     }
     override fun getItemCount(): Int = items.size
@@ -681,10 +685,25 @@ class FeedAdapter(
         if (item.isVip && item.badgeUrl.isNotEmpty()) {
             holder.b.imgBadge.visibility = View.VISIBLE
             Glide.with(holder.b.root.context).load(if (item.badgeUrl.startsWith("http")) item.badgeUrl else baseUrl + item.badgeUrl).into(holder.b.imgBadge)
-        } else holder.b.imgBadge.visibility = View.GONE
+        } else {
+            holder.b.imgBadge.visibility = View.GONE
+        }
 
+        // >>> منطق رفع باگ مستطیل سایه‌دار برای پست‌های VIP <<<
+        val typedValue = TypedValue()
+        holder.b.root.context.theme.resolveAttribute(android.R.attr.colorBackground, typedValue, true)
+        
         if (item.isVip && item.customBg.isNotEmpty()) {
-            try { holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg)) } catch(e: Exception) {}
+            try { 
+                holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg))
+                holder.b.cardPost.strokeWidth = 0 // حذف خط دور کارت
+            } catch(e: Exception) {
+                holder.b.cardPost.setCardBackgroundColor(typedValue.data)
+                holder.b.cardPost.strokeWidth = 2
+            }
+        } else {
+            holder.b.cardPost.setCardBackgroundColor(typedValue.data)
+            holder.b.cardPost.strokeWidth = 2
         }
 
         if (item.userId == currentUserId && currentUserId != -1) {
@@ -700,13 +719,17 @@ class FeedAdapter(
         if (item.userPic.isNotEmpty()) {
             val picUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
             Glide.with(holder.b.root.context).load(picUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgUserPic)
-        } else holder.b.imgUserPic.setImageResource(R.drawable.ic_sun)
+        } else {
+            holder.b.imgUserPic.setImageResource(R.drawable.ic_sun)
+        }
         
         if (item.media.isNotEmpty() && item.mediaType == "image") {
             val mediaUrl = if (item.media.startsWith("http")) item.media else baseUrl + item.media
             Glide.with(holder.b.root.context).load(mediaUrl).into(holder.b.imgPostMedia)
             holder.b.imgPostMedia.visibility = View.VISIBLE
-        } else holder.b.imgPostMedia.visibility = View.GONE
+        } else {
+            holder.b.imgPostMedia.visibility = View.GONE
+        }
 
         if (item.isLiked) {
             holder.b.imgLike.setColorFilter(ContextCompat.getColor(holder.b.root.context, R.color.purple))

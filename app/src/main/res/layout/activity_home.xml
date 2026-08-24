@@ -70,6 +70,7 @@
                 app:tint="#FFD600" />
         </LinearLayout>
 
+        <!-- تب‌های بخش خانه (عمومی / شخصی) -->
         <LinearLayout
             android:id="@+id/layoutHomeTabs"
             android:layout_width="match_parent"
@@ -108,7 +109,7 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- بخش فید و چت -->
+    <!-- بخش فید و چت (همراه با پدینگ مناسب برای منوی شناور) -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
         android:layout_width="0dp"
@@ -140,7 +141,7 @@
         </FrameLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <!-- بخش فروشگاه -->
+    <!-- بخش فروشگاه سورس -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="0dp"
@@ -154,14 +155,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/topBar" />
 
-    <!-- بخش آپلود سورس -->
+    <!-- بخش آپلود سورس (کاملاً ایمن از تداخل با منوی شناور) -->
     <ScrollView
         android:id="@+id/uploadContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:padding="16dp"
-        android:paddingBottom="120dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -236,7 +236,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- اسکرین‌شات‌ها -->
+            <!-- اسکرین‌شات‌ها (تا ۶ عدد) -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -394,6 +394,7 @@
                     android:textColor="?android:attr/textColorPrimary" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- دکمه آپلود -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnUpload"
                 android:layout_width="match_parent"
@@ -404,6 +405,12 @@
                 android:textStyle="bold"
                 app:backgroundTint="#5288C1"
                 app:cornerRadius="16dp" />
+
+            <!-- این فضای خالی مشکل گیر کردن دکمه زیر منو رو برای همیشه حل می‌کنه -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="120dp" />
+
         </LinearLayout>
     </ScrollView>
 
@@ -413,7 +420,6 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:paddingBottom="120dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -541,11 +547,16 @@
                     android:text="تایید تغییرات"
                     app:backgroundTint="#10b981"
                     app:cornerRadius="16dp" />
+                    
+                <!-- فضای خالی برای اینکه زیر منوی شناور گیر نکنه -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp" />
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
-    <!-- دکمه شناور پست جدید -->
+    <!-- دکمه شناور پست جدید (جایگاهش طوری تنظیم شده که با منو تداخل نداشته باشه) -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/btnAddPost"
         android:layout_width="wrap_content"
@@ -558,7 +569,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:tint="@android:color/white" />
 
-    <!-- منوی نویگیشن شناور و شیشه‌ای -->
+    <!-- منوی نویگیشن شناور و شیشه‌ای (Floating Glass Nav) -->
     <androidx.cardview.widget.CardView
         android:id="@+id/bottomNavContainer"
         android:layout_width="match_parent"

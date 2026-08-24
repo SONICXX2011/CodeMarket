@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -54,8 +55,11 @@ class PostDetailsActivity : AppCompatActivity() {
         sessionManager = SessionManager(this)
         markwon = MarkdownUtils.createMarkwon(this) 
 
-        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
-        else setTheme(R.style.Theme_CodeMarket_Light)
+        if (sessionManager.isDarkMode()) {
+            setTheme(R.style.Theme_CodeMarket_Dark)
+        } else {
+            setTheme(R.style.Theme_CodeMarket_Light)
+        }
 
         binding = ActivityPostDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -73,7 +77,9 @@ class PostDetailsActivity : AppCompatActivity() {
 
         MarkdownUtils.applyMarkdownShortcuts(binding.etComment)
 
-        binding.btnAttach.setOnClickListener { pickMedia.launch(arrayOf("image/*", "video/*")) }
+        binding.btnAttach.setOnClickListener { 
+            pickMedia.launch(arrayOf("image/*", "video/*")) 
+        }
 
         binding.btnCancelMedia.setOnClickListener {
             selectedMediaUri = null
@@ -309,7 +315,6 @@ class PostCommentsAdapter(
         holder.b.tvCommentText.textSize = size
         MarkdownUtils.setMarkdownText(markwon, holder.b.tvCommentText, item.text)
 
-        // ارورهای tvReplyInfo اینجا با جایگزینی با layoutReplyQuote برطرف شد
         if (item.replyToId != -1 && item.replyToUsername.isNotEmpty()) {
             holder.b.layoutReplyQuote.visibility = View.VISIBLE
             holder.b.tvReplyUsernameQuote.text = item.replyToUsername
@@ -349,16 +354,34 @@ class PostCommentsAdapter(
         if (item.userPic.isNotEmpty()) {
             val fullUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
             Glide.with(holder.b.root.context).load(fullUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgCommentUser)
-        } else holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
+        } else {
+            holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
+        }
 
         if (item.isVip && item.badgeUrl.isNotEmpty()) {
             holder.b.imgBadge.visibility = View.VISIBLE
             Glide.with(holder.b.root.context).load(if (item.badgeUrl.startsWith("http")) item.badgeUrl else baseUrl + item.badgeUrl).into(holder.b.imgBadge)
-        } else holder.b.imgBadge.visibility = View.GONE
+        } else {
+            holder.b.imgBadge.visibility = View.GONE
+        }
 
+        // >>> حل ریشه‌ای باگ گرافیک مستطیلی کثیف در نظرات فید <<<
+        val typedValue = TypedValue()
+        holder.b.root.context.theme.resolveAttribute(android.R.attr.colorBackground, typedValue, true)
+        
         if (item.isVip && item.customBg.isNotEmpty()) {
-            try { holder.b.cardComment.setCardBackgroundColor(Color.parseColor(item.customBg)) } catch(e: Exception) {}
+            try { 
+                holder.b.cardComment.setCardBackgroundColor(Color.parseColor(item.customBg))
+                holder.b.cardComment.strokeWidth = 0 // پاک کردن خطوط سایه
+            } catch(e: Exception) {
+                holder.b.cardComment.setCardBackgroundColor(typedValue.data)
+                holder.b.cardComment.strokeWidth = 2
+            }
+        } else {
+            holder.b.cardComment.setCardBackgroundColor(typedValue.data)
+            holder.b.cardComment.strokeWidth = 2
         }
     }
+    
     override fun getItemCount(): Int = items.size
 }

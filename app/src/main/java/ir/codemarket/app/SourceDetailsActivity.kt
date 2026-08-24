@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -49,14 +50,20 @@ class SourceDetailsActivity : AppCompatActivity() {
         sessionManager = SessionManager(this)
         markwon = MarkdownUtils.createMarkwon(this)
 
-        if (sessionManager.isDarkMode()) setTheme(R.style.Theme_CodeMarket_Dark)
-        else setTheme(R.style.Theme_CodeMarket_Light)
+        if (sessionManager.isDarkMode()) {
+            setTheme(R.style.Theme_CodeMarket_Dark)
+        } else {
+            setTheme(R.style.Theme_CodeMarket_Light)
+        }
 
         binding = ActivitySourceDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if (sessionManager.isDarkMode()) binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
-        else binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
+        if (sessionManager.isDarkMode()) {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_dark)
+        } else {
+            binding.root.setBackgroundResource(R.drawable.bg_gradient_light)
+        }
 
         sourceId = intent.getIntExtra("source_id", -1)
         if (sourceId == -1) { finish(); return }
@@ -369,7 +376,10 @@ data class CommentItem(
 )
 
 class CommentsAdapter(
-    private val items: List<CommentItem>, private val markwon: Markwon, private val size: Float, private val currentUserId: Int,
+    private val items: List<CommentItem>, 
+    private val markwon: Markwon, 
+    private val size: Float, 
+    private val currentUserId: Int,
     private val onOptionsClick: (View, CommentItem, Int) -> Unit,
     private val onReplyClick: (CommentItem) -> Unit,
     private val onUserClick: (Int) -> Unit
@@ -385,14 +395,15 @@ class CommentsAdapter(
         if (item.rating > 0) {
             holder.b.tvCommentRating.visibility = View.VISIBLE
             holder.b.tvCommentRating.text = item.rating.toString()
-        } else holder.b.tvCommentRating.visibility = View.GONE
+        } else {
+            holder.b.tvCommentRating.visibility = View.GONE
+        }
 
         holder.b.tvCommentDate.text = TimeUtils.getTimeAgo(item.date)
         
         holder.b.tvCommentText.textSize = size
         MarkdownUtils.setMarkdownText(markwon, holder.b.tvCommentText, item.text)
 
-        // ارورهای tvReplyInfo با جایگزینی با layoutReplyQuote برطرف شد
         if (item.replyToId != -1 && item.replyToUsername.isNotEmpty()) {
             holder.b.layoutReplyQuote.visibility = View.VISIBLE
             holder.b.tvReplyUsernameQuote.text = item.replyToUsername
@@ -404,7 +415,9 @@ class CommentsAdapter(
         if (item.userId == currentUserId && currentUserId != -1) {
             holder.b.btnCommentOptions.visibility = View.VISIBLE
             holder.b.btnCommentOptions.setOnClickListener { onOptionsClick(it, item, position) }
-        } else holder.b.btnCommentOptions.visibility = View.GONE
+        } else {
+            holder.b.btnCommentOptions.visibility = View.GONE
+        }
         
         holder.b.btnReply.setOnClickListener { onReplyClick(item) }
 
@@ -415,16 +428,34 @@ class CommentsAdapter(
         if (item.userPic.isNotEmpty()) {
             val fullUrl = if (item.userPic.startsWith("http")) item.userPic else baseUrl + item.userPic
             Glide.with(holder.b.root.context).load(fullUrl).placeholder(R.drawable.ic_sun).into(holder.b.imgCommentUser)
-        } else holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
+        } else {
+            holder.b.imgCommentUser.setImageResource(R.drawable.ic_sun)
+        }
 
         if (item.isVip && item.badgeUrl.isNotEmpty()) {
             holder.b.imgBadge.visibility = View.VISIBLE
             Glide.with(holder.b.root.context).load(if (item.badgeUrl.startsWith("http")) item.badgeUrl else baseUrl + item.badgeUrl).into(holder.b.imgBadge)
-        } else holder.b.imgBadge.visibility = View.GONE
+        } else {
+            holder.b.imgBadge.visibility = View.GONE
+        }
 
+        // >>> حل ریشه‌ای باگ گرافیک مستطیلی کثیف در نظرات فروشگاه <<<
+        val typedValue = TypedValue()
+        holder.b.root.context.theme.resolveAttribute(android.R.attr.colorBackground, typedValue, true)
+        
         if (item.isVip && item.customBg.isNotEmpty()) {
-            try { holder.b.cardComment.setCardBackgroundColor(Color.parseColor(item.customBg)) } catch(e: Exception) {}
+            try { 
+                holder.b.cardComment.setCardBackgroundColor(Color.parseColor(item.customBg))
+                holder.b.cardComment.strokeWidth = 0 // پاک کردن خطوط سایه
+            } catch(e: Exception) {
+                holder.b.cardComment.setCardBackgroundColor(typedValue.data)
+                holder.b.cardComment.strokeWidth = 2
+            }
+        } else {
+            holder.b.cardComment.setCardBackgroundColor(typedValue.data)
+            holder.b.cardComment.strokeWidth = 2
         }
     }
+    
     override fun getItemCount(): Int = items.size
 }
