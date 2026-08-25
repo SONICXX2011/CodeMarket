@@ -37,7 +37,9 @@ class UserProfileActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         targetUserId = intent.getIntExtra("user_id", -1)
-        if (targetUserId == -1) { 
+        targetUsername = intent.getStringExtra("target_username") ?: ""
+
+        if (targetUserId == -1 && targetUsername.isEmpty()) { 
             finish()
             return 
         }
@@ -47,18 +49,24 @@ class UserProfileActivity : AppCompatActivity() {
         }
 
         binding.btnSendMessage.setOnClickListener {
-            val intent = Intent(this, ChatActivity::class.java)
-            intent.putExtra("target_id", targetUserId)
-            intent.putExtra("target_username", targetUsername)
-            startActivity(intent)
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            if (targetUserId != -1) {
+                val intent = Intent(this, ChatActivity::class.java)
+                intent.putExtra("target_id", targetUserId)
+                intent.putExtra("target_username", targetUsername)
+                startActivity(intent)
+                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+            } else {
+                Toast.makeText(this, "در حال بارگذاری اطلاعات...", Toast.LENGTH_SHORT).show()
+            }
         }
 
         binding.btnCopyId.setOnClickListener {
-            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("UserID", targetUsername)
-            clipboard.setPrimaryClip(clip)
-            Toast.makeText(this, "آیدی کپی شد", Toast.LENGTH_SHORT).show()
+            if (targetUsername.isNotEmpty()) {
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val clip = ClipData.newPlainText("UserID", targetUsername)
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this, "آیدی کپی شد", Toast.LENGTH_SHORT).show()
+            }
         }
 
         loadUserData()
@@ -66,13 +74,17 @@ class UserProfileActivity : AppCompatActivity() {
 
     private fun loadUserData() {
         val token = sessionManager.fetchAuthToken() ?: return
+        
+        val identifier = if (targetUsername.isNotEmpty()) targetUsername else targetUserId.toString()
+        
         CoroutineScope(Dispatchers.Main).launch {
             val (res, _) = withContext(Dispatchers.IO) { 
-                ApiClient.getRequest("/api/users/$targetUserId", token) 
+                ApiClient.getRequest("/api/users/$identifier", token) 
             }
             if (res != null) {
                 val json = JSONObject(res)
                 if (json.getBoolean("success")) {
+                    targetUserId = json.optInt("id", targetUserId)
                     targetUsername = json.getString("username")
                     binding.tvProfileName.text = json.getString("full_name")
                     binding.tvProfileUsername.text = "@" + targetUsername
@@ -95,6 +107,9 @@ class UserProfileActivity : AppCompatActivity() {
                             Glide.with(this@UserProfileActivity).load(if (badge.startsWith("http")) badge else NativeLib.getBaseUrl() + badge).into(binding.imgVipBadgeProfile)
                         }
                     }
+                } else {
+                    Toast.makeText(this@UserProfileActivity, "کاربر پیدا نشد!", Toast.LENGTH_SHORT).show()
+                    finish()
                 }
             }
         }

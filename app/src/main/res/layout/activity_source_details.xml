@@ -18,7 +18,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- استفاده از NestedScrollView برای حل باگ اسکرول -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -74,6 +73,27 @@
                         android:layout_marginTop="16dp"
                         android:textSize="15sp"
                         android:lineSpacingExtra="4dp" />
+
+                    <TextView
+                        android:id="@+id/tvScreenshotsTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="تصاویر محیط برنامه"
+                        android:textColor="?android:attr/textColorPrimary"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginTop="24dp"
+                        android:visibility="gone" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerScreenshots"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:clipToPadding="false"
+                        android:orientation="horizontal"
+                        android:visibility="gone" />
+
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -123,7 +143,6 @@
                 android:visibility="gone"
                 android:progressTint="#5288C1" />
 
-            <!-- گرافیک نمودار نظرات شبیه مایکت -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -237,7 +256,6 @@
                 android:textSize="18sp"
                 android:layout_marginBottom="12dp" />
 
-            <!-- غیرفعال کردن اسکرول داخلی برای نمایش تمام کامنت‌ها -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerComments"
                 android:layout_width="match_parent"

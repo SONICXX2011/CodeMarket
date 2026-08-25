@@ -8,16 +8,20 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.widget.PopupMenu
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
@@ -134,9 +138,7 @@ class SourceDetailsActivity : AppCompatActivity() {
                 if (json.getBoolean("success")) {
                     val source = json.getJSONObject("source")
                     binding.tvDetailsName.text = source.optString("name", "نامشخص")
-                    
                     binding.tvDetailsDesc.textSize = sessionManager.getTextSize()
-                    
                     MarkdownUtils.setMarkdownText(markwon, binding.tvDetailsDesc, source.optString("description", "بدون توضیحات"))
 
                     val logoUrl = source.optString("logo", "")
@@ -148,6 +150,24 @@ class SourceDetailsActivity : AppCompatActivity() {
                     val rawZipUrl = source.optString("zip_file", "")
                     zipUrl = if (rawZipUrl.startsWith("http")) rawZipUrl else NativeLib.getBaseUrl() + rawZipUrl
 
+                    val screenshotsArray = source.optJSONArray("screenshots") ?: JSONArray()
+                    val screenshotsList = mutableListOf<String>()
+                    for (i in 0 until screenshotsArray.length()) {
+                        screenshotsList.add(screenshotsArray.getString(i))
+                    }
+
+                    if (screenshotsList.isNotEmpty()) {
+                        binding.tvScreenshotsTitle.visibility = View.VISIBLE
+                        binding.recyclerScreenshots.visibility = View.VISIBLE
+                        binding.recyclerScreenshots.layoutManager = LinearLayoutManager(this@SourceDetailsActivity, LinearLayoutManager.HORIZONTAL, false)
+                        binding.recyclerScreenshots.adapter = ScreenshotsAdapter(screenshotsList) { position ->
+                            showFullScreenImages(screenshotsList, position)
+                        }
+                    } else {
+                        binding.tvScreenshotsTitle.visibility = View.GONE
+                        binding.recyclerScreenshots.visibility = View.GONE
+                    }
+
                     val commentsArray = source.optJSONArray("comments") ?: JSONArray()
                     parseComments(commentsArray)
                     calculateMyketRatings(commentsArray)
@@ -156,25 +176,67 @@ class SourceDetailsActivity : AppCompatActivity() {
         }
     }
 
+    private fun showFullScreenImages(imageUrls: List<String>, initialPosition: Int) {
+        val dialog = android.app.Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        
+        val recyclerView = RecyclerView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            layoutManager = LinearLayoutManager(this@SourceDetailsActivity, LinearLayoutManager.HORIZONTAL, false)
+        }
+        
+        val snapHelper = PagerSnapHelper()
+        snapHelper.attachToRecyclerView(recyclerView)
+
+        recyclerView.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+                val img = ImageView(parent.context).apply {
+                    layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                }
+                return object : RecyclerView.ViewHolder(img) {}
+            }
+            override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+                val iv = holder.itemView as ImageView
+                val fullUrl = if (imageUrls[position].startsWith("http")) imageUrls[position] else NativeLib.getBaseUrl() + imageUrls[position]
+                Glide.with(iv.context).load(fullUrl).into(iv)
+            }
+            override fun getItemCount() = imageUrls.size
+        }
+
+        val closeBtn = ImageView(this).apply {
+            setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+            setColorFilter(Color.WHITE)
+            setBackgroundResource(R.drawable.bg_circle_glass)
+            setPadding(30, 30, 30, 30)
+            setOnClickListener { dialog.dismiss() }
+        }
+        
+        val frameLayout = FrameLayout(this).apply {
+            setBackgroundColor(Color.BLACK)
+            addView(recyclerView)
+            
+            val params = FrameLayout.LayoutParams(120, 120)
+            params.gravity = Gravity.TOP or Gravity.START
+            params.setMargins(48, 48, 48, 0)
+            addView(closeBtn, params)
+        }
+
+        dialog.setContentView(frameLayout)
+        dialog.show()
+        recyclerView.scrollToPosition(initialPosition)
+    }
+
     private fun parseComments(array: JSONArray) {
         commentsList.clear()
         for (i in 0 until array.length()) {
             val c = array.getJSONObject(i)
             commentsList.add(
                 CommentItem(
-                    c.optInt("id", 0),
-                    c.optInt("user_id", -1),
-                    c.optString("username", "کاربر"),
-                    c.optString("user_pic", ""),
-                    c.optString("text", ""),
-                    c.optInt("rating", 0),
-                    c.optString("date", ""),
-                    c.optBoolean("is_vip", false),
-                    c.optString("badge_url", ""),
-                    c.optString("custom_bg", ""),
-                    c.optInt("reply_to_id", -1),
-                    c.optString("reply_to_username", ""),
-                    c.optString("reply_to_text", "")
+                    c.optInt("id", 0), c.optInt("user_id", -1), c.optString("username", "کاربر"),
+                    c.optString("user_pic", ""), c.optString("text", ""), c.optInt("rating", 0),
+                    c.optString("date", ""), c.optBoolean("is_vip", false), c.optString("badge_url", ""),
+                    c.optString("custom_bg", ""), c.optInt("reply_to_id", -1),
+                    c.optString("reply_to_username", ""), c.optString("reply_to_text", "")
                 )
             )
         }
@@ -370,6 +432,29 @@ class SourceDetailsActivity : AppCompatActivity() {
     }
 }
 
+class ScreenshotsAdapter(
+    private val items: List<String>, 
+    private val onClick: (Int) -> Unit
+) : RecyclerView.Adapter<ScreenshotsAdapter.ViewHolder>() {
+
+    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val img: ImageView = view.findViewById(R.id.imgScreenshot)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_screenshot, parent, false)
+        return ViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val fullUrl = if (items[position].startsWith("http")) items[position] else NativeLib.getBaseUrl() + items[position]
+        Glide.with(holder.itemView.context).load(fullUrl).placeholder(R.drawable.ic_sun).into(holder.img)
+        holder.itemView.setOnClickListener { onClick(position) }
+    }
+
+    override fun getItemCount(): Int = items.size
+}
+
 data class CommentItem(
     val id: Int, val userId: Int, val username: String, val userPic: String, val text: String,
     val rating: Int, val date: String, val isVip: Boolean, val badgeUrl: String, val customBg: String,
@@ -440,7 +525,6 @@ class CommentsAdapter(
             holder.b.imgBadge.visibility = View.GONE
         }
 
-        // >>> اعمال بی‌نقص رنگ VIP و حذفِ کامل سایه و حاشیه کثیف <<<
         val typedValue = TypedValue()
         holder.b.root.context.theme.resolveAttribute(android.R.attr.colorBackground, typedValue, true)
         
