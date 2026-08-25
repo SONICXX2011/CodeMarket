@@ -29,14 +29,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:background="#1A5288C1"
+                android:background="#1AA1887F"
                 android:visibility="gone"
                 android:layout_marginBottom="8dp">
                 
                 <View 
                     android:layout_width="3dp" 
                     android:layout_height="match_parent" 
-                    android:background="#5288C1" />
+                    android:background="#A1887F" />
                 
                 <LinearLayout 
                     android:layout_width="wrap_content" 
@@ -49,7 +49,7 @@
                         android:id="@+id/tvReplyUsernameQuote" 
                         android:layout_width="wrap_content" 
                         android:layout_height="wrap_content" 
-                        android:textColor="#5288C1" 
+                        android:textColor="#A1887F" 
                         android:textStyle="bold" 
                         android:textSize="12sp" />
                         
@@ -64,7 +64,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- بخش مدیا (ویدیو و عکس با تایمر و حجم) -->
+            <!-- بخش مدیا (ویدیو و عکس) -->
             <FrameLayout
                 android:id="@+id/layoutMedia"
                 android:layout_width="wrap_content"
@@ -94,7 +94,6 @@
                         android:visibility="gone"/>
                 </androidx.cardview.widget.CardView>
 
-                <!-- آیکون پخش در وسط ویدیو -->
                 <ImageView 
                     android:id="@+id/imgPlayVideo" 
                     android:layout_width="56dp" 
@@ -103,11 +102,10 @@
                     android:background="@drawable/bg_circle_glass"
                     android:backgroundTint="#80000000"
                     android:padding="16dp"
-                    android:src="@android:drawable/ic_media_play" 
+                    android:src="@drawable/ic_play_circle" 
                     app:tint="@android:color/white" 
                     android:visibility="gone"/>
 
-                <!-- حجم و تایم گوشه بالا چپ -->
                 <TextView 
                     android:id="@+id/tvMediaInfo" 
                     android:layout_width="wrap_content" 
@@ -124,10 +122,10 @@
                     android:visibility="gone"/>
             </FrameLayout>
 
-            <!-- پلیر ویس (پخش پیام صوتی) -->
+            <!-- پلیر ویس تلگرامی -->
             <LinearLayout
                 android:id="@+id/layoutVoice"
-                android:layout_width="240dp"
+                android:layout_width="260dp"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
@@ -138,20 +136,89 @@
                 
                 <ImageView
                     android:id="@+id/btnPlayVoice"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:src="@android:drawable/ic_media_play"
-                    app:tint="#5288C1"
-                    android:background="@drawable/bg_circle_glass"
-                    android:padding="8dp"/>
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_play_circle"
+                    app:tint="#A1887F"
+                    android:background="?attr/selectableItemBackgroundBorderless" />
                     
-                <SeekBar
-                    android:id="@+id/seekBarVoice"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
-                    android:progressTint="#5288C1"
-                    android:thumbTint="#5288C1"/>
+                    android:orientation="vertical"
+                    android:layout_marginStart="8dp">
+                    
+                    <SeekBar
+                        android:id="@+id/seekBarVoice"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp"
+                        android:progressTint="#A1887F"
+                        android:thumbTint="#A1887F"/>
+                        
+                    <TextView
+                        android:id="@+id/tvVoiceInfo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0:00 • در حال بارگیری..."
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:textSize="10sp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginStart="4dp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- داکیومنت و فایل متفرقه -->
+            <LinearLayout
+                android:id="@+id/layoutFile"
+                android:layout_width="260dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone"
+                android:layout_marginBottom="8dp"
+                android:padding="12dp"
+                android:background="@drawable/bg_glass_input">
+                
+                <ImageView
+                    android:id="@+id/btnDownloadFile"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_file"
+                    app:tint="@android:color/white"
+                    android:background="@drawable/bg_circle_glass"
+                    android:backgroundTint="#A1887F"
+                    android:padding="12dp" />
+                    
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp">
+                    
+                    <TextView
+                        android:id="@+id/tvFileName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="فایل"
+                        android:textColor="?android:attr/textColorPrimary"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="middle"/>
+                        
+                    <TextView
+                        android:id="@+id/tvFileSize"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="برای دانلود کلیک کنید"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:textSize="11sp"
+                        android:layout_marginTop="2dp"/>
+                </LinearLayout>
             </LinearLayout>
 
             <TextView
@@ -162,7 +229,7 @@
                 android:textSize="15sp"
                 android:lineSpacingExtra="4dp" />
 
-            <!-- بخش زمان پیام و تیک خوانده شدن -->
+            <!-- بخش زمان پیام و تیک خوانده شدن (تلگرامی) -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -181,11 +248,11 @@
                 
                 <ImageView 
                     android:id="@+id/imgMessageStatus" 
-                    android:layout_width="14dp" 
-                    android:layout_height="14dp" 
+                    android:layout_width="16dp" 
+                    android:layout_height="16dp" 
                     android:layout_marginStart="4dp" 
-                    android:src="@android:drawable/checkbox_on_background" 
-                    app:tint="#5288C1" 
+                    android:src="@drawable/ic_check" 
+                    app:tint="#A1887F" 
                     android:visibility="gone"/>
             </LinearLayout>
             

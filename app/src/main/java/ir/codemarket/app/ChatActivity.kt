@@ -1,16 +1,19 @@
 package ir.codemarket.app
 
 import android.Manifest
+import android.app.DownloadManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextPaint
@@ -24,6 +27,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -38,6 +42,8 @@ import ir.codemarket.app.databinding.ActivityChatBinding
 import ir.codemarket.app.databinding.ItemChatMessageBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -64,12 +70,15 @@ class ChatActivity : AppCompatActivity() {
     private var replyToId: Int? = null
     private var selectedMediaUri: Uri? = null
 
-    // ضبط صدا
     private var mediaRecorder: MediaRecorder? = null
     private var audioFile: File? = null
     private var isRecording = false
 
-    // اجازه انتخاب همه نوع فایل و رسانه
+    // پلیر درون برنامه‌ای برای ویس
+    private var mediaPlayer: MediaPlayer? = null
+    private var playingMessageId: Int = -1
+    private var audioUpdateJob: Job? = null
+
     private val pickMedia = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let {
             selectedMediaUri = it
@@ -114,11 +123,16 @@ class ChatActivity : AppCompatActivity() {
         binding.tvChatTargetName.text = targetUsername
         if (targetUserId == currentUserId) {
             binding.tvChatTargetName.text = "پیام‌های ذخیره شده"
-            binding.imgChatTargetPic.setImageResource(android.R.drawable.ic_menu_save)
-            binding.imgChatTargetPic.setColorFilter(Color.parseColor("#5288C1"))
+            binding.imgChatTargetPic.setImageResource(R.drawable.ic_saved_messages)
+            binding.imgChatTargetPic.setColorFilter(Color.parseColor("#A1887F"))
         }
 
         binding.btnBack.setOnClickListener { finish() }
+        
+        binding.btnRefreshChat.setOnClickListener {
+            it.animate().rotationBy(360f).setDuration(500).start()
+            loadMessages()
+        }
 
         binding.imgChatTargetPic.setOnClickListener { 
             if (targetUserId != currentUserId) {
@@ -172,9 +186,9 @@ class ChatActivity : AppCompatActivity() {
                 MotionEvent.ACTION_MOVE -> {
                     if (isRecording) {
                         val dY = event.y - startY
-                        if (dY < -150) { // کشیدن به بالا
+                        if (dY < -150) { 
                             stopRecording(send = true)
-                        } else if (dY > 150) { // کشیدن به پایین
+                        } else if (dY > 150) { 
                             stopRecording(send = false)
                         }
                     }
@@ -276,12 +290,70 @@ class ChatActivity : AppCompatActivity() {
             sessionManager.getTextSize(), 
             currentUserId,
             onReplyClick = { msg -> startReply(msg) },
-            onMessageLongClick = { msg, position -> showMessageOptions(msg, position) }
+            onMessageLongClick = { msg, position -> showMessageOptions(msg, position) },
+            onPlayAudio = { msgId, url, seekBar, tvInfo, btnPlay -> playAudio(msgId, url, seekBar, tvInfo, btnPlay) },
+            onDownloadFile = { url, name -> downloadFileToDevice(url, name) }
         )
         val layoutManager = LinearLayoutManager(this)
         layoutManager.stackFromEnd = true
         binding.recyclerChat.layoutManager = layoutManager
         binding.recyclerChat.adapter = chatAdapter
+    }
+
+    // پخش صوتی تلگرامی در همان صفحه
+    private fun playAudio(msgId: Int, url: String, seekBar: SeekBar, tvInfo: TextView, btnPlay: ImageView) {
+        if (playingMessageId == msgId && mediaPlayer?.isPlaying == true) {
+            mediaPlayer?.pause()
+            btnPlay.setImageResource(R.drawable.ic_play_circle)
+            audioUpdateJob?.cancel()
+            return
+        }
+
+        if (playingMessageId == msgId && mediaPlayer != null) {
+            mediaPlayer?.start()
+            btnPlay.setImageResource(R.drawable.ic_pause_circle)
+            startAudioProgressLoop(seekBar, tvInfo)
+            return
+        }
+
+        mediaPlayer?.release()
+        audioUpdateJob?.cancel()
+        
+        chatAdapter.notifyDataSetChanged() // برای ریست کردن آیکون بقیه پیام‌ها
+        
+        playingMessageId = msgId
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(url)
+            prepareAsync()
+            tvInfo.text = "درحال بارگیری..."
+            setOnPreparedListener {
+                seekBar.max = duration
+                start()
+                btnPlay.setImageResource(R.drawable.ic_pause_circle)
+                startAudioProgressLoop(seekBar, tvInfo)
+            }
+            setOnCompletionListener {
+                btnPlay.setImageResource(R.drawable.ic_play_circle)
+                seekBar.progress = 0
+                val min = (duration / 1000) / 60
+                val sec = (duration / 1000) % 60
+                tvInfo.text = String.format("%d:%02d • ویس", min, sec)
+                audioUpdateJob?.cancel()
+            }
+        }
+    }
+
+    private fun startAudioProgressLoop(seekBar: SeekBar, tvInfo: TextView) {
+        audioUpdateJob = CoroutineScope(Dispatchers.Main).launch {
+            while (mediaPlayer?.isPlaying == true) {
+                val current = mediaPlayer?.currentPosition ?: 0
+                seekBar.progress = current
+                val min = (current / 1000) / 60
+                val sec = (current / 1000) % 60
+                tvInfo.text = String.format("%d:%02d • ویس", min, sec)
+                delay(100)
+            }
+        }
     }
     
     private fun startReply(msg: ChatMessageItem) {
@@ -324,7 +396,7 @@ class ChatActivity : AppCompatActivity() {
                 }
                 val icon = ImageView(this).apply {
                     setImageResource(iconRes)
-                    setColorFilter(Color.parseColor("#5288C1"))
+                    setColorFilter(Color.parseColor("#A1887F"))
                     layoutParams = LinearLayout.LayoutParams(64, 64)
                 }
                 val textV = android.widget.TextView(this).apply {
@@ -339,13 +411,20 @@ class ChatActivity : AppCompatActivity() {
                 container.addView(itemLayout)
             }
 
-            addOption("پاسخ دادن (نقل قول)", android.R.drawable.ic_menu_revert) { startReply(msg) }
+            addOption("پاسخ دادن", android.R.drawable.ic_menu_revert) { startReply(msg) }
             
             if (msg.text.isNotEmpty()) {
-                addOption("کپی کردن متن", android.R.drawable.ic_menu_edit) {
+                addOption("کپی متن", android.R.drawable.ic_menu_edit) {
                     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     clipboard.setPrimaryClip(ClipData.newPlainText("Message", msg.text))
-                    Toast.makeText(this, "متن کپی شد", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "کپی شد", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            if (msg.media.isNotEmpty()) {
+                addOption("ذخیره در فایل‌ها", android.R.drawable.ic_menu_save) {
+                    val url = if (msg.media.startsWith("http")) msg.media else NativeLib.getBaseUrl() + msg.media
+                    downloadFileToDevice(url, "CM_DL_${System.currentTimeMillis()}")
                 }
             }
             
@@ -359,9 +438,23 @@ class ChatActivity : AppCompatActivity() {
             bottomSheetInternal?.setBackgroundColor(Color.TRANSPARENT)
             bottomSheet.show()
             
+        } catch (e: Exception) { }
+    }
+
+    private fun downloadFileToDevice(url: String, name: String) {
+        try {
+            val request = DownloadManager.Request(Uri.parse(url))
+                .setTitle("دانلود فایل از کد مارکت")
+                .setDescription("در حال دانلود...")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name)
+                .setAllowedOverMetered(true)
+
+            val manager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            manager.enqueue(request)
+            Toast.makeText(this, "دانلود شروع شد...", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Logger.logEvent("BottomSheetError", e.stackTraceToString())
-            Toast.makeText(this, "خطا در نمایش گزینه‌ها", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "خطا در دانلود", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -370,18 +463,11 @@ class ChatActivity : AppCompatActivity() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/chats/message/$msgId/delete", "{}", token) }
-                if (res != null) {
-                    val json = JSONObject(res)
-                    if (json.getBoolean("success")) {
-                        messagesList.removeAt(position)
-                        chatAdapter.notifyItemRemoved(position)
-                        Toast.makeText(this@ChatActivity, "پیام حذف شد", Toast.LENGTH_SHORT).show()
-                    }
+                if (res != null && JSONObject(res).getBoolean("success")) {
+                    messagesList.removeAt(position)
+                    chatAdapter.notifyItemRemoved(position)
                 }
-            } catch (e: Exception) {
-                Logger.logEvent("DeleteMessageError", e.stackTraceToString())
-                Toast.makeText(this@ChatActivity, "خطا در حذف پیام", Toast.LENGTH_SHORT).show()
-            }
+            } catch (e: Exception) { }
         }
     }
 
@@ -393,9 +479,7 @@ class ChatActivity : AppCompatActivity() {
             }
             MarkdownUtils.applyMarkdownShortcuts(editText)
 
-            AlertDialog.Builder(this)
-                .setTitle("ویرایش پیام")
-                .setView(editText)
+            AlertDialog.Builder(this).setTitle("ویرایش پیام").setView(editText)
                 .setPositiveButton("ثبت") { _, _ ->
                     val newText = editText.text.toString()
                     val token = sessionManager.fetchAuthToken() ?: return@setPositiveButton
@@ -403,25 +487,15 @@ class ChatActivity : AppCompatActivity() {
                         try {
                             val payload = JSONObject().put("text", newText).toString()
                             val (res, _) = withContext(Dispatchers.IO) { ApiClient.postRequest("/api/chats/message/${msg.id}/edit", payload, token) }
-                            if (res != null) {
-                                val json = JSONObject(res)
-                                if (json.getBoolean("success")) {
-                                    messagesList[position] = messagesList[position].copy(text = newText, isEdited = true)
-                                    chatAdapter.notifyItemChanged(position)
-                                    Toast.makeText(this@ChatActivity, "پیام ویرایش شد", Toast.LENGTH_SHORT).show()
-                                }
+                            if (res != null && JSONObject(res).getBoolean("success")) {
+                                messagesList[position] = messagesList[position].copy(text = newText, isEdited = true)
+                                chatAdapter.notifyItemChanged(position)
                             }
-                        } catch (e: Exception) {
-                            Logger.logEvent("EditMessageError", e.stackTraceToString())
-                            Toast.makeText(this@ChatActivity, "خطا در ویرایش پیام", Toast.LENGTH_SHORT).show()
-                        }
+                        } catch (e: Exception) { }
                     }
                 }
-                .setNegativeButton("لغو", null)
-                .show()
-        } catch (e: Exception) {
-            Logger.logEvent("EditDialogError", e.stackTraceToString())
-        }
+                .setNegativeButton("لغو", null).show()
+        } catch (e: Exception) { }
     }
 
     private fun loadMessages() {
@@ -447,9 +521,7 @@ class ChatActivity : AppCompatActivity() {
                         binding.recyclerChat.scrollToPosition(messagesList.size - 1)
                     }
                 }
-            } catch (e: Exception) {
-                Logger.logEvent("LoadMessagesError", e.stackTraceToString())
-            }
+            } catch (e: Exception) { }
         }
     }
 
@@ -488,7 +560,14 @@ class ChatActivity : AppCompatActivity() {
                     }
 
                     val mimeType = contentResolver.getType(mediaUri) ?: "application/octet-stream"
-                    val ext = if (mimeType.contains("video")) "mp4" else if (mimeType.contains("audio")) "m4a" else "jpg"
+                    
+                    var type = "document"
+                    if (mimeType.contains("video")) type = "video"
+                    else if (mimeType.contains("audio") || mimeType.contains("mpeg")) type = "voice"
+                    else if (mimeType.contains("image")) type = "image"
+
+                    val ext = if (type == "video") "mp4" else if (type == "voice") "m4a" else if (type == "image") "jpg" else "zip"
+                    
                     outputStream.writeBytes("--$boundary\r\n")
                     outputStream.writeBytes("Content-Disposition: form-data; name=\"media\"; filename=\"upload.$ext\"\r\n")
                     outputStream.writeBytes("Content-Type: $mimeType\r\n\r\n")
@@ -507,17 +586,19 @@ class ChatActivity : AppCompatActivity() {
                         binding.btnCancelReply.performClick()
                         loadMessages()
                     } else if (responseCode == 429) {
-                        Toast.makeText(this@ChatActivity, "بیش از حد مجاز! یک دقیقه صبر کنید.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@ChatActivity, "بیش از حد مجاز!", Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    binding.btnSendMessage.isEnabled = true
-                    Logger.logEvent("SendMessageError", e.stackTraceToString())
-                    Toast.makeText(this@ChatActivity, "خطای شبکه", Toast.LENGTH_SHORT).show()
-                }
+                withContext(Dispatchers.Main) { binding.btnSendMessage.isEnabled = true }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaPlayer?.release()
+        audioUpdateJob?.cancel()
     }
 }
 
@@ -534,10 +615,7 @@ class SpoilerSpan : ClickableSpan() {
         ds.isUnderlineText = false
     }
     override fun onClick(widget: View) {
-        if (isHidden) {
-            isHidden = false
-            widget.invalidate()
-        }
+        if (isHidden) { isHidden = false; widget.invalidate() }
     }
 }
 
@@ -552,7 +630,9 @@ class ChatMessagesAdapter(
     private val size: Float, 
     private val currentUserId: Int,
     private val onReplyClick: (ChatMessageItem) -> Unit,
-    private val onMessageLongClick: (ChatMessageItem, Int) -> Unit
+    private val onMessageLongClick: (ChatMessageItem, Int) -> Unit,
+    private val onPlayAudio: (Int, String, SeekBar, TextView, ImageView) -> Unit,
+    private val onDownloadFile: (String, String) -> Unit
 ) : RecyclerView.Adapter<ChatMessagesAdapter.ViewHolder>() {
     
     class ViewHolder(val b: ItemChatMessageBinding) : RecyclerView.ViewHolder(b.root)
@@ -567,9 +647,13 @@ class ChatMessagesAdapter(
             holder.b.layoutMessageRoot.gravity = if (isMe) Gravity.END else Gravity.START
             
             if (isMe) {
-                holder.b.cardMessageBubble.setCardBackgroundColor(Color.parseColor("#225288C1"))
+                holder.b.cardMessageBubble.setCardBackgroundColor(Color.parseColor("#22A1887F"))
                 holder.b.imgMessageStatus.visibility = View.VISIBLE
-                holder.b.imgMessageStatus.setImageResource(android.R.drawable.checkbox_on_background)
+                if (item.isRead) {
+                    holder.b.imgMessageStatus.setImageResource(R.drawable.ic_check_all)
+                } else {
+                    holder.b.imgMessageStatus.setImageResource(R.drawable.ic_check)
+                }
             } else {
                 holder.b.cardMessageBubble.setCardBackgroundColor(Color.parseColor("#1A888888"))
                 holder.b.imgMessageStatus.visibility = View.GONE
@@ -579,7 +663,6 @@ class ChatMessagesAdapter(
                 holder.b.tvMessageText.visibility = View.VISIBLE
                 holder.b.tvMessageText.textSize = size
                 
-                // حل مشکل آبی شدن آیدی‌ها و لینک‌های مارک‌داون
                 var processedText = item.text
                 val mentionRegex = Regex("(?<!\\[)@([A-Za-z0-9_]+)(?!\\])")
                 processedText = processedText.replace(mentionRegex, "[@$1](codemarket://user/$1)")
@@ -616,19 +699,25 @@ class ChatMessagesAdapter(
                 holder.b.layoutReplyQuote.visibility = View.GONE
             }
 
+            holder.b.layoutMedia.visibility = View.GONE
+            holder.b.layoutVoice.visibility = View.GONE
+            holder.b.layoutFile.visibility = View.GONE
+
             if (item.media.isNotEmpty()) {
                 val fullMediaUrl = if (item.media.startsWith("http")) item.media else NativeLib.getBaseUrl() + item.media
+                val fileName = item.media.substringAfterLast("/")
+
                 if (item.mediaType == "voice") {
                     holder.b.layoutVoice.visibility = View.VISIBLE
-                    holder.b.layoutMedia.visibility = View.GONE
+                    holder.b.btnPlayVoice.setImageResource(R.drawable.ic_play_circle)
+                    holder.b.seekBarVoice.progress = 0
+                    holder.b.tvVoiceInfo.text = "0:00 • ویس"
+                    
                     holder.b.btnPlayVoice.setOnClickListener {
-                        val intent = Intent(Intent.ACTION_VIEW)
-                        intent.setDataAndType(Uri.parse(fullMediaUrl), "audio/*")
-                        holder.b.root.context.startActivity(intent)
+                        onPlayAudio(item.id, fullMediaUrl, holder.b.seekBarVoice, holder.b.tvVoiceInfo, holder.b.btnPlayVoice)
                     }
-                } else {
+                } else if (item.mediaType == "video" || item.mediaType == "image") {
                     holder.b.layoutMedia.visibility = View.VISIBLE
-                    holder.b.layoutVoice.visibility = View.GONE
                     Glide.with(holder.b.root.context).load(fullMediaUrl).into(holder.b.imgMessageMedia)
                     
                     if (item.mediaType == "video") {
@@ -648,19 +737,21 @@ class ChatMessagesAdapter(
                         intent.setDataAndType(Uri.parse(fullMediaUrl), type)
                         holder.b.root.context.startActivity(intent)
                     }
+                } else {
+                    // نمایش به صورت فایل
+                    holder.b.layoutFile.visibility = View.VISIBLE
+                    holder.b.tvFileName.text = fileName
+                    holder.b.btnDownloadFile.setOnClickListener {
+                        onDownloadFile(fullMediaUrl, fileName)
+                    }
+                    holder.b.layoutFile.setOnClickListener { holder.b.btnDownloadFile.performClick() }
                 }
-            } else {
-                holder.b.layoutMedia.visibility = View.GONE
-                holder.b.layoutVoice.visibility = View.GONE
             }
 
             holder.b.cardMessageBubble.setOnClickListener { onReplyClick(item) }
             holder.b.cardMessageBubble.setOnLongClickListener { onMessageLongClick(item, position); true }
             
-        } catch (e: Exception) {
-            Logger.logEvent("AdapterBindError", e.stackTraceToString())
-        }
+        } catch (e: Exception) { }
     }
-    
     override fun getItemCount(): Int = items.size
 }

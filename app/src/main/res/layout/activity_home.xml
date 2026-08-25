@@ -90,7 +90,7 @@
                 android:gravity="center"
                 android:padding="8dp"
                 android:text="عمومی"
-                android:textColor="#5288C1"
+                android:textColor="#A1887F"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -109,7 +109,6 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- بخش فید و چت (همراه با پدینگ مناسب برای منوی شناور) -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
         android:layout_width="0dp"
@@ -141,7 +140,6 @@
         </FrameLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <!-- بخش فروشگاه سورس -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="0dp"
@@ -155,7 +153,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/topBar" />
 
-    <!-- بخش آپلود سورس (کاملاً ایمن از تداخل با منوی شناور) -->
+    <!-- بخش آپلود سورس با منوی پیشرفت آپلود -->
     <ScrollView
         android:id="@+id/uploadContainer"
         android:layout_width="0dp"
@@ -209,7 +207,7 @@
                             android:id="@+id/imgLogoPreview"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            app:civ_border_color="#5288C1"
+                            app:civ_border_color="#A1887F"
                             app:civ_border_width="2dp" />
 
                         <ImageView
@@ -218,7 +216,7 @@
                             android:layout_height="24dp"
                             android:layout_gravity="top|end"
                             android:background="@drawable/bg_circle_glass"
-                            android:backgroundTint="#B3EF4444"
+                            android:backgroundTint="#B3E57373"
                             android:src="@android:drawable/ic_menu_close_clear_cancel"
                             app:tint="@android:color/white" />
                     </FrameLayout>
@@ -228,10 +226,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="55dp"
                         android:text="انتخاب لوگو اصلی سورس"
-                        android:textColor="#5288C1"
-                        app:backgroundTint="#1A5288C1"
+                        android:textColor="#A1887F"
+                        app:backgroundTint="#1AA1887F"
                         app:cornerRadius="12dp"
-                        app:strokeColor="#5288C1"
+                        app:strokeColor="#A1887F"
                         app:strokeWidth="1dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -277,10 +275,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="55dp"
                         android:text="انتخاب عکس‌های محیط برنامه"
-                        android:textColor="#5288C1"
-                        app:backgroundTint="#1A5288C1"
+                        android:textColor="#A1887F"
+                        app:backgroundTint="#1AA1887F"
                         app:cornerRadius="12dp"
-                        app:strokeColor="#5288C1"
+                        app:strokeColor="#A1887F"
                         app:strokeWidth="1dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -306,7 +304,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp"
-                        android:background="#1A10B981"
+                        android:background="#1AA1887F"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:padding="8dp"
@@ -316,7 +314,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:src="@android:drawable/ic_menu_save"
-                            app:tint="#10b981" />
+                            app:tint="#A1887F" />
 
                         <TextView
                             android:id="@+id/tvZipPreviewName"
@@ -326,7 +324,7 @@
                             android:layout_weight="1"
                             android:ellipsize="middle"
                             android:maxLines="1"
-                            android:textColor="#10b981"
+                            android:textColor="#A1887F"
                             android:textStyle="bold" />
 
                         <ImageView
@@ -335,7 +333,7 @@
                             android:layout_height="24dp"
                             android:background="?attr/selectableItemBackgroundBorderless"
                             android:src="@android:drawable/ic_menu_close_clear_cancel"
-                            app:tint="#EF4444" />
+                            app:tint="#E57373" />
                     </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton
@@ -343,10 +341,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="55dp"
                         android:text="انتخاب فایل ZIP سورس"
-                        android:textColor="#10B981"
-                        app:backgroundTint="#1A10B981"
+                        android:textColor="#A1887F"
+                        app:backgroundTint="#1AA1887F"
                         app:cornerRadius="12dp"
-                        app:strokeColor="#10B981"
+                        app:strokeColor="#A1887F"
                         app:strokeWidth="1dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -361,8 +359,8 @@
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusTopStart="12dp"
-                app:boxStrokeColor="#5288C1"
-                app:hintTextColor="#5288C1">
+                app:boxStrokeColor="#A1887F"
+                app:hintTextColor="#A1887F">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etSourceName"
@@ -381,8 +379,8 @@
                 app:boxCornerRadiusBottomStart="12dp"
                 app:boxCornerRadiusTopEnd="12dp"
                 app:boxCornerRadiusTopStart="12dp"
-                app:boxStrokeColor="#5288C1"
-                app:hintTextColor="#5288C1">
+                app:boxStrokeColor="#A1887F"
+                app:hintTextColor="#A1887F">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etSourceDesc"
@@ -403,10 +401,76 @@
                 android:text="ارسال برای تایید ادمین"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                app:backgroundTint="#5288C1"
+                app:backgroundTint="#A1887F"
                 app:cornerRadius="16dp" />
 
-            <!-- این فضای خالی مشکل گیر کردن دکمه زیر منو رو برای همیشه حل می‌کنه -->
+            <!-- کادر پیشرفت آپلود با قابلیت توقف -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/layoutUploadProgress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="#1AE57373"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+                
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        
+                        <TextView
+                            android:id="@+id/tvUploadStatus"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="در حال آماده‌سازی..."
+                            android:textColor="?android:attr/textColorPrimary"
+                            android:textStyle="bold"
+                            android:textSize="14sp"/>
+                            
+                        <TextView
+                            android:id="@+id/tvUploadPercent"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0%"
+                            android:textColor="#E57373"
+                            android:textStyle="bold"
+                            android:textSize="16sp"
+                            android:layout_marginEnd="12dp"/>
+                            
+                        <ImageView
+                            android:id="@+id/btnCancelUpload"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@android:drawable/ic_menu_close_clear_cancel"
+                            android:background="@drawable/bg_circle_glass"
+                            android:backgroundTint="#80E57373"
+                            android:padding="6dp"
+                            app:tint="@android:color/white"/>
+                    </LinearLayout>
+                    
+                    <ProgressBar
+                        android:id="@+id/progressUpload"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="8dp"
+                        android:layout_marginTop="12dp"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressTint="#E57373"
+                        android:backgroundTint="#33E57373"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="120dp" />
@@ -434,7 +498,7 @@
                 android:id="@+id/profileHeader"
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
-                android:background="#5288C1"
+                android:background="#A1887F"
                 app:layout_constraintTop_toTopOf="parent" />
 
             <de.hdodenhof.circleimageview.CircleImageView
@@ -486,8 +550,8 @@
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusTopStart="12dp"
-                    app:boxStrokeColor="#5288C1"
-                    app:hintTextColor="#5288C1">
+                    app:boxStrokeColor="#A1887F"
+                    app:hintTextColor="#A1887F">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etFullName"
@@ -506,8 +570,8 @@
                     app:boxCornerRadiusBottomStart="12dp"
                     app:boxCornerRadiusTopEnd="12dp"
                     app:boxCornerRadiusTopStart="12dp"
-                    app:boxStrokeColor="#5288C1"
-                    app:hintTextColor="#5288C1">
+                    app:boxStrokeColor="#A1887F"
+                    app:hintTextColor="#A1887F">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etBio"
@@ -527,7 +591,7 @@
                     android:textColor="?android:attr/textColorPrimary"
                     app:backgroundTint="#1A888888"
                     app:cornerRadius="16dp"
-                    app:strokeColor="#5288C1"
+                    app:strokeColor="#A1887F"
                     app:strokeWidth="1dp" />
 
                 <com.google.android.material.button.MaterialButton
@@ -536,7 +600,7 @@
                     android:layout_height="55dp"
                     android:layout_marginTop="16dp"
                     android:text="شخصی‌سازی ظاهری"
-                    app:backgroundTint="#5288C1"
+                    app:backgroundTint="#A1887F"
                     app:cornerRadius="16dp" />
 
                 <com.google.android.material.button.MaterialButton
@@ -548,7 +612,6 @@
                     app:backgroundTint="#10b981"
                     app:cornerRadius="16dp" />
                     
-                <!-- فضای خالی برای اینکه زیر منوی شناور گیر نکنه -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="120dp" />
@@ -556,7 +619,6 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
-    <!-- دکمه شناور پست جدید (جایگاهش طوری تنظیم شده که با منو تداخل نداشته باشه) -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/btnAddPost"
         android:layout_width="wrap_content"
@@ -564,12 +626,11 @@
         android:layout_marginEnd="20dp"
         android:layout_marginBottom="110dp"
         android:src="@android:drawable/ic_menu_add"
-        app:backgroundTint="#5288C1"
+        app:backgroundTint="#A1887F"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:tint="@android:color/white" />
 
-    <!-- منوی نویگیشن شناور و شیشه‌ای (Floating Glass Nav) -->
     <androidx.cardview.widget.CardView
         android:id="@+id/bottomNavContainer"
         android:layout_width="match_parent"
@@ -588,8 +649,8 @@
             android:layout_height="65dp"
             android:background="@android:color/transparent"
             app:itemActiveIndicatorStyle="@null"
-            app:itemIconTint="#5288C1"
-            app:itemTextColor="#5288C1"
+            app:itemIconTint="#A1887F"
+            app:itemTextColor="#A1887F"
             app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_nav_menu" />
     </androidx.cardview.widget.CardView>

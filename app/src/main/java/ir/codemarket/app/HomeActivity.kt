@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.TypedValue
@@ -33,6 +34,7 @@ import ir.codemarket.app.databinding.ItemFeedPostBinding
 import ir.codemarket.app.databinding.ItemShopBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -65,6 +67,8 @@ class HomeActivity : AppCompatActivity() {
     private var selectedZipUri: Uri? = null
     private var selectedLogoUri: Uri? = null
     private val selectedScreenshots = mutableListOf<Uri>()
+    private var uploadJob: Job? = null
+    private var isUploadCancelled = false
 
     private val pickZip = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
@@ -103,7 +107,6 @@ class HomeActivity : AppCompatActivity() {
         
         sessionManager = SessionManager(this)
         
-        // <<< بررسی امنیتی سشن: اگر توکن ندارد، پرت شود بیرون به صفحه لاگین >>>
         if (sessionManager.fetchAuthToken().isNullOrEmpty()) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
@@ -166,7 +169,7 @@ class HomeActivity : AppCompatActivity() {
         }
 
         binding.tabPublic.setOnClickListener {
-            binding.tabPublic.setTextColor(Color.parseColor("#5288C1"))
+            binding.tabPublic.setTextColor(Color.parseColor("#A1887F"))
             binding.tabPublic.setTypeface(null, Typeface.BOLD)
             binding.tabPublic.setBackgroundResource(R.drawable.bg_glass_input)
             
@@ -180,7 +183,7 @@ class HomeActivity : AppCompatActivity() {
         }
 
         binding.tabPrivate.setOnClickListener {
-            binding.tabPrivate.setTextColor(Color.parseColor("#5288C1"))
+            binding.tabPrivate.setTextColor(Color.parseColor("#A1887F"))
             binding.tabPrivate.setTypeface(null, Typeface.BOLD)
             binding.tabPrivate.setBackgroundResource(R.drawable.bg_glass_input)
             
@@ -489,6 +492,14 @@ class HomeActivity : AppCompatActivity() {
             else Toast.makeText(this, "حداکثر ۶ عکس انتخاب شده است", Toast.LENGTH_SHORT).show()
         }
 
+        binding.btnCancelUpload.setOnClickListener {
+            isUploadCancelled = true
+            uploadJob?.cancel()
+            binding.layoutUploadProgress.visibility = View.GONE
+            binding.btnUpload.isEnabled = true
+            Toast.makeText(this, "آپلود لغو شد", Toast.LENGTH_SHORT).show()
+        }
+
         binding.btnUpload.setOnClickListener {
             if (selectedZipUri != null && selectedLogoUri != null && selectedScreenshots.isNotEmpty()) {
                 val name = binding.etSourceName.text.toString()
@@ -528,12 +539,29 @@ class HomeActivity : AppCompatActivity() {
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 
+    private fun getFileSize(uri: Uri): Long {
+        contentResolver.query(uri, null, null, null, null)?.use {
+            val sizeIndex = it.getColumnIndex(OpenableColumns.SIZE)
+            if (it.moveToFirst() && sizeIndex != -1) return it.getLong(sizeIndex)
+        }
+        return 0L
+    }
+
     private fun performAdvancedUpload(name: String, desc: String) {
         binding.btnUpload.isEnabled = false
+        binding.layoutUploadProgress.visibility = View.VISIBLE
+        binding.progressUpload.progress = 0
+        binding.tvUploadPercent.text = "0%"
+        isUploadCancelled = false
+
         val token = sessionManager.fetchAuthToken() ?: return
         
-        CoroutineScope(Dispatchers.IO).launch {
+        uploadJob = CoroutineScope(Dispatchers.IO).launch {
             try {
+                var totalBytes = getFileSize(selectedLogoUri!!) + getFileSize(selectedZipUri!!)
+                selectedScreenshots.forEach { totalBytes += getFileSize(it) }
+                var uploadedBytes = 0L
+
                 val url = URL(NativeLib.getBaseUrl() + "/api/upload")
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "POST"
@@ -545,16 +573,33 @@ class HomeActivity : AppCompatActivity() {
                 val outputStream = DataOutputStream(connection.outputStream)
 
                 fun writeText(fieldName: String, value: String) {
+                    if (isUploadCancelled) throw Exception("Cancelled")
                     outputStream.writeBytes("--$boundary\r\n")
                     outputStream.writeBytes("Content-Disposition: form-data; name=\"$fieldName\"\r\n\r\n")
                     outputStream.write(value.toByteArray(Charsets.UTF_8))
                     outputStream.writeBytes("\r\n")
                 }
-                fun writeFile(fieldName: String, fileName: String, mimeType: String, uri: Uri) {
+
+                suspend fun writeFile(fieldName: String, fileName: String, mimeType: String, uri: Uri) {
+                    withContext(Dispatchers.Main) { binding.tvUploadStatus.text = "درحال آپلود $fileName ..." }
                     outputStream.writeBytes("--$boundary\r\n")
                     outputStream.writeBytes("Content-Disposition: form-data; name=\"$fieldName\"; filename=\"$fileName\"\r\n")
                     outputStream.writeBytes("Content-Type: $mimeType\r\n\r\n")
-                    contentResolver.openInputStream(uri)?.use { it.copyTo(outputStream) }
+                    
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        val buffer = ByteArray(4096)
+                        var bytesRead: Int
+                        while (input.read(buffer).also { bytesRead = it } != -1) {
+                            if (isUploadCancelled) throw Exception("Cancelled")
+                            outputStream.write(buffer, 0, bytesRead)
+                            uploadedBytes += bytesRead
+                            val progress = ((uploadedBytes.toDouble() / totalBytes) * 100).toInt()
+                            withContext(Dispatchers.Main) {
+                                binding.progressUpload.progress = progress
+                                binding.tvUploadPercent.text = "$progress%"
+                            }
+                        }
+                    }
                     outputStream.writeBytes("\r\n")
                 }
 
@@ -573,6 +618,7 @@ class HomeActivity : AppCompatActivity() {
                 val code = connection.responseCode
                 withContext(Dispatchers.Main) {
                     binding.btnUpload.isEnabled = true
+                    binding.layoutUploadProgress.visibility = View.GONE
                     if (code in 200..299) {
                         Toast.makeText(this@HomeActivity, "ارسال موفقیت‌آمیز بود", Toast.LENGTH_SHORT).show()
                         binding.etSourceName.setText(""); binding.etSourceDesc.setText("")
@@ -581,7 +627,13 @@ class HomeActivity : AppCompatActivity() {
                     } else Toast.makeText(this@HomeActivity, "خطا در ارسال", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { binding.btnUpload.isEnabled = true; Toast.makeText(this@HomeActivity, "خطای اتصال", Toast.LENGTH_SHORT).show() }
+                withContext(Dispatchers.Main) { 
+                    if (!isUploadCancelled) {
+                        binding.btnUpload.isEnabled = true
+                        binding.layoutUploadProgress.visibility = View.GONE
+                        Toast.makeText(this@HomeActivity, "خطای اتصال یا آپلود", Toast.LENGTH_SHORT).show() 
+                    }
+                }
             }
         }
     }
@@ -640,7 +692,6 @@ class HomeActivity : AppCompatActivity() {
     }
 }
 
-// دیتامدل‌ها
 data class ShopItem(val id: Int, val name: String, val desc: String, val logo: String)
 data class ChatListItem(val id: Int, val targetUserId: Int, val targetUsername: String, val targetPic: String, val lastMessage: String, val date: String, val unreadCount: Int)
 data class FeedItem(
@@ -651,7 +702,6 @@ data class FeedItem(
     val isVip: Boolean, val badgeUrl: String, val customBg: String
 )
 
-// آداپترها
 class ChatListAdapter(private val items: List<ChatListItem>, private val onClick: (ChatListItem) -> Unit) : RecyclerView.Adapter<ChatListAdapter.ViewHolder>() {
     class ViewHolder(val b: ItemChatListBinding) : RecyclerView.ViewHolder(b.root)
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(ItemChatListBinding.inflate(LayoutInflater.from(parent.context), parent, false))
@@ -665,14 +715,17 @@ class ChatListAdapter(private val items: List<ChatListItem>, private val onClick
         val baseUrl = NativeLib.getBaseUrl()
         
         if (item.targetUserId == item.id && item.targetUsername == "پیام‌های ذخیره شده") {
-            holder.b.imgChatUser.setImageResource(android.R.drawable.ic_menu_save)
-            holder.b.imgChatUser.setColorFilter(Color.parseColor("#5288C1"))
+            holder.b.imgChatUser.setImageResource(R.drawable.ic_saved_messages)
+            holder.b.imgChatUser.setColorFilter(Color.parseColor("#A1887F"))
+            holder.b.imgChatUser.setPadding(12, 12, 12, 12)
         } else if (item.targetPic.isNotEmpty()) {
             Glide.with(holder.b.root.context).load(if (item.targetPic.startsWith("http")) item.targetPic else baseUrl + item.targetPic).placeholder(R.drawable.my_icon).into(holder.b.imgChatUser)
             holder.b.imgChatUser.clearColorFilter()
+            holder.b.imgChatUser.setPadding(0, 0, 0, 0)
         } else {
             holder.b.imgChatUser.setImageResource(R.drawable.my_icon)
             holder.b.imgChatUser.clearColorFilter()
+            holder.b.imgChatUser.setPadding(0, 0, 0, 0)
         }
         
         holder.b.root.setOnClickListener { onClick(item) }
@@ -727,8 +780,6 @@ class FeedAdapter(
         holder.b.tvPostDate.text = TimeUtils.getTimeAgo(item.createdAt) + editStatus
 
         val baseUrl = NativeLib.getBaseUrl()
-        
-        // <<< اعمال رنگ VIP و تیک آبی برای تمام کاربران در فید و پست‌ها >>>
         if (item.isVip && item.badgeUrl.isNotEmpty()) {
             holder.b.imgBadge.visibility = View.VISIBLE
             val badgeFullUrl = if (item.badgeUrl.startsWith("http")) item.badgeUrl else baseUrl + item.badgeUrl
@@ -744,14 +795,14 @@ class FeedAdapter(
             if (item.isVip && item.customBg.isNotEmpty()) {
                 try { 
                     holder.b.cardPost.setCardBackgroundColor(Color.parseColor(item.customBg))
-                    (holder.b.cardPost as MaterialCardView).setStrokeWidth(0)
+                    (holder.b.cardPost as MaterialCardView).strokeWidth = 0
                 } catch(e: Exception) {
                     holder.b.cardPost.setCardBackgroundColor(typedValue.data)
-                    (holder.b.cardPost as MaterialCardView).setStrokeWidth(2)
+                    (holder.b.cardPost as MaterialCardView).strokeWidth = 2
                 }
             } else {
                 holder.b.cardPost.setCardBackgroundColor(typedValue.data)
-                (holder.b.cardPost as MaterialCardView).setStrokeWidth(2)
+                (holder.b.cardPost as MaterialCardView).strokeWidth = 2
             }
         }
 
@@ -793,6 +844,5 @@ class FeedAdapter(
         holder.b.tvPostText.setOnClickListener { onPostClick(item.id) }
         holder.b.root.setOnClickListener { onPostClick(item.id) }
     }
-    
     override fun getItemCount(): Int = items.size
 }
