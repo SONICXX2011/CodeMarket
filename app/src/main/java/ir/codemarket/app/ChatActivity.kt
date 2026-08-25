@@ -8,6 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.net.Uri
@@ -28,6 +30,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -300,7 +303,6 @@ class ChatActivity : AppCompatActivity() {
         binding.recyclerChat.adapter = chatAdapter
     }
 
-    // پخش صوتی تلگرامی در همان صفحه
     private fun playAudio(msgId: Int, url: String, seekBar: SeekBar, tvInfo: TextView, btnPlay: ImageView) {
         if (playingMessageId == msgId && mediaPlayer?.isPlaying == true) {
             mediaPlayer?.pause()
@@ -319,7 +321,7 @@ class ChatActivity : AppCompatActivity() {
         mediaPlayer?.release()
         audioUpdateJob?.cancel()
         
-        chatAdapter.notifyDataSetChanged() // برای ریست کردن آیکون بقیه پیام‌ها
+        chatAdapter.notifyDataSetChanged() 
         
         playingMessageId = msgId
         mediaPlayer = MediaPlayer().apply {
@@ -371,13 +373,13 @@ class ChatActivity : AppCompatActivity() {
             val container = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(40, 50, 40, 50)
-                background = android.graphics.drawable.GradientDrawable().apply {
+                background = GradientDrawable().apply {
                     setColor(Color.parseColor(if (sessionManager.isDarkMode()) "#1A1A2E" else "#F3F4F6"))
                     cornerRadii = floatArrayOf(80f, 80f, 80f, 80f, 0f, 0f, 0f, 0f)
                 }
             }
 
-            val title = android.widget.TextView(this).apply {
+            val title = TextView(this).apply {
                 text = "گزینه‌های پیام"
                 textSize = 14f
                 setTextColor(Color.parseColor("#888888"))
@@ -399,12 +401,12 @@ class ChatActivity : AppCompatActivity() {
                     setColorFilter(Color.parseColor("#A1887F"))
                     layoutParams = LinearLayout.LayoutParams(64, 64)
                 }
-                val textV = android.widget.TextView(this).apply {
+                val textV = TextView(this).apply {
                     text = titleStr
                     textSize = 16f
                     setTextColor(Color.parseColor(if (sessionManager.isDarkMode()) "#FFFFFF" else "#000000"))
                     setPadding(40, 0, 40, 0)
-                    setTypeface(null, android.graphics.Typeface.BOLD)
+                    setTypeface(null, Typeface.BOLD)
                 }
                 itemLayout.addView(icon)
                 itemLayout.addView(textV)
@@ -738,7 +740,6 @@ class ChatMessagesAdapter(
                         holder.b.root.context.startActivity(intent)
                     }
                 } else {
-                    // نمایش به صورت فایل
                     holder.b.layoutFile.visibility = View.VISIBLE
                     holder.b.tvFileName.text = fileName
                     holder.b.btnDownloadFile.setOnClickListener {
