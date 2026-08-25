@@ -1,20 +1,24 @@
 package ir.codemarket.app
 
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.media.MediaRecorder
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
-import android.text.util.Linkify
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -39,6 +43,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.DataOutputStream
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.regex.Pattern
@@ -59,11 +64,23 @@ class ChatActivity : AppCompatActivity() {
     private var replyToId: Int? = null
     private var selectedMediaUri: Uri? = null
 
+    // ضبط صدا
+    private var mediaRecorder: MediaRecorder? = null
+    private var audioFile: File? = null
+    private var isRecording = false
+
+    // اجازه انتخاب همه نوع فایل و رسانه
     private val pickMedia = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let {
             selectedMediaUri = it
             binding.layoutMediaPreview.visibility = View.VISIBLE
             Glide.with(this).load(it).into(binding.imgMediaPreview)
+        }
+    }
+
+    private val requestAudioPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (!isGranted) {
+            Toast.makeText(this, "برای ارسال ویس به دسترسی میکروفون نیاز است", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -113,8 +130,9 @@ class ChatActivity : AppCompatActivity() {
         binding.tvChatTargetName.setOnClickListener { binding.imgChatTargetPic.performClick() }
 
         setupMessageInputFormatting()
+        setupVoiceRecording()
 
-        binding.btnAttach.setOnClickListener { pickMedia.launch(arrayOf("image/*", "video/*", "audio/*")) }
+        binding.btnAttach.setOnClickListener { pickMedia.launch(arrayOf("*/*")) }
         
         binding.btnCancelMedia.setOnClickListener {
             selectedMediaUri = null
@@ -136,6 +154,78 @@ class ChatActivity : AppCompatActivity() {
 
         setupRecyclerView()
         loadMessages()
+    }
+
+    private fun setupVoiceRecording() {
+        var startY = 0f
+        binding.btnMic.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                        requestAudioPermission.launch(Manifest.permission.RECORD_AUDIO)
+                        return@setOnTouchListener false
+                    }
+                    startY = event.y
+                    startRecording()
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (isRecording) {
+                        val dY = event.y - startY
+                        if (dY < -150) { // کشیدن به بالا
+                            stopRecording(send = true)
+                        } else if (dY > 150) { // کشیدن به پایین
+                            stopRecording(send = false)
+                        }
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (isRecording) stopRecording(send = true)
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun startRecording() {
+        try {
+            audioFile = File(cacheDir, "voice_${System.currentTimeMillis()}.m4a")
+            mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(this) else MediaRecorder()
+            mediaRecorder?.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setOutputFile(audioFile?.absolutePath)
+                prepare()
+                start()
+            }
+            isRecording = true
+            binding.layoutRecordOverlay.visibility = View.VISIBLE
+            binding.etMessage.visibility = View.INVISIBLE
+        } catch (e: Exception) {
+            isRecording = false
+            Logger.logEvent("VoiceRecordError", e.stackTraceToString())
+        }
+    }
+
+    private fun stopRecording(send: Boolean) {
+        if (!isRecording) return
+        isRecording = false
+        binding.layoutRecordOverlay.visibility = View.GONE
+        binding.etMessage.visibility = View.VISIBLE
+
+        try { mediaRecorder?.stop() } catch (e: Exception) { }
+        mediaRecorder?.release()
+        mediaRecorder = null
+
+        if (send && audioFile?.exists() == true && audioFile?.length()!! > 0) {
+            sendMessage("", Uri.fromFile(audioFile))
+        } else {
+            audioFile?.delete()
+            if (!send) Toast.makeText(this, "ارسال ویس لغو شد", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun setupMessageInputFormatting() {
@@ -398,7 +488,7 @@ class ChatActivity : AppCompatActivity() {
                     }
 
                     val mimeType = contentResolver.getType(mediaUri) ?: "application/octet-stream"
-                    val ext = if (mimeType.contains("video")) "mp4" else if (mimeType.contains("audio")) "mp3" else "jpg"
+                    val ext = if (mimeType.contains("video")) "mp4" else if (mimeType.contains("audio")) "m4a" else "jpg"
                     outputStream.writeBytes("--$boundary\r\n")
                     outputStream.writeBytes("Content-Disposition: form-data; name=\"media\"; filename=\"upload.$ext\"\r\n")
                     outputStream.writeBytes("Content-Type: $mimeType\r\n\r\n")
@@ -489,7 +579,15 @@ class ChatMessagesAdapter(
                 holder.b.tvMessageText.visibility = View.VISIBLE
                 holder.b.tvMessageText.textSize = size
                 
-                val spanned = markwon.toMarkdown(item.text)
+                // حل مشکل آبی شدن آیدی‌ها و لینک‌های مارک‌داون
+                var processedText = item.text
+                val mentionRegex = Regex("(?<!\\[)@([A-Za-z0-9_]+)(?!\\])")
+                processedText = processedText.replace(mentionRegex, "[@$1](codemarket://user/$1)")
+
+                val urlRegex = Regex("(?<!\\]\\()\\b(https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|])")
+                processedText = processedText.replace(urlRegex, "[$1]($1)")
+
+                val spanned = markwon.toMarkdown(processedText)
                 val ssb = SpannableStringBuilder(spanned)
                 val matcher = Pattern.compile("\\|\\|(.*?)\\|\\|").matcher(ssb.toString())
                 var offset = 0
@@ -503,7 +601,6 @@ class ChatMessagesAdapter(
                 }
                 holder.b.tvMessageText.text = ssb
                 holder.b.tvMessageText.movementMethod = LinkMovementMethod.getInstance()
-                Linkify.addLinks(holder.b.tvMessageText, Linkify.ALL)
             } else {
                 holder.b.tvMessageText.visibility = View.GONE
             }

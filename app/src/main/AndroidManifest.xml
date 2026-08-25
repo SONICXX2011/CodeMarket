@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- دسترسی ضبط صدا برای چت -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <!-- دسترسی‌های خواندن و نوشتن فایل -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
@@ -29,7 +32,6 @@
         android:requestLegacyExternalStorage="true"
         tools:targetApi="31">
 
-        <!-- صفحه لاگین به عنوان نقطه شروع برنامه -->
         <activity
             android:name=".LoginActivity"
             android:exported="true"
@@ -40,44 +42,14 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".RegisterActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".HomeActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustPan" />
-
-        <activity
-            android:name=".ChatActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".UserProfileActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".PostDetailsActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".SourceDetailsActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".CreatePostActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false" />
+        <activity android:name=".RegisterActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".HomeActivity" android:exported="false" android:windowSoftInputMode="adjustPan" />
+        <activity android:name=".ChatActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".UserProfileActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".PostDetailsActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".SourceDetailsActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".CreatePostActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".SettingsActivity" android:exported="false" />
 
     </application>
 </manifest>
